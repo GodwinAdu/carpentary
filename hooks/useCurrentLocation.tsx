@@ -1,12 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 interface Location {
     latitude: number
     longitude: number
     accuracy: number
-    timestamp?: number
+    heading?: number
+    speed?: number
+    altitude?: number
 }
 
 export default function useCurrentLocation(watch = false): {
@@ -19,10 +21,10 @@ export default function useCurrentLocation(watch = false): {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
 
-    const requestLocation = () => {
+    const requestLocation = useCallback(() => {
         setLoading(true)
         setError(null)
-    }
+    }, [])
 
     useEffect(() => {
         if (!navigator.geolocation) {
@@ -36,7 +38,9 @@ export default function useCurrentLocation(watch = false): {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
                 accuracy: position.coords.accuracy,
-                timestamp: position.timestamp,
+                heading: position.coords.heading || undefined,
+                speed: position.coords.speed || undefined,
+                altitude: position.coords.altitude || undefined,
             }
             console.log("Current location:", currentLocation)
             setLocation(currentLocation)
@@ -44,26 +48,14 @@ export default function useCurrentLocation(watch = false): {
         }
 
         const onError = (error: GeolocationPositionError) => {
-            let errorMessage = "Unknown error occurred"
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = "Location access denied by user."
-                    break
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = "Location information is unavailable."
-                    break
-                case error.TIMEOUT:
-                    errorMessage = "Location request timed out."
-                    break
-            }
-            setError(errorMessage)
+            setError(error.message)
             setLoading(false)
         }
 
         const options: PositionOptions = {
             enableHighAccuracy: true,
             timeout: 15000,
-            maximumAge: 60000,
+            maximumAge: 30000,
         }
 
         let watcherId: number
@@ -79,7 +71,7 @@ export default function useCurrentLocation(watch = false): {
                 navigator.geolocation.clearWatch(watcherId)
             }
         }
-    }, [watch, loading])
+    }, [watch])
 
     return { location, error, loading, requestLocation }
 }
