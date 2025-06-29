@@ -1,15 +1,10 @@
-"use client"
+import AdvancedMap from "@/components/map/advance-map";
 
-import dynamic from 'next/dynamic';
-
-const AdminMap = dynamic(() => import('@/components/AdminMap'), {
-    ssr: false,
-});
 
 export default function MapPage() {
-    return (
-        <div className="w-full h-screen">
-            <AdminMap />
-        </div>
-    );
+  return (
+    <div className="w-full h-screen">
+      <AdvancedMap />
+    </div>
+  )
 }
