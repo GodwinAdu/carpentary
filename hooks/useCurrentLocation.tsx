@@ -6,9 +6,11 @@ interface Location {
     latitude: number
     longitude: number
     accuracy: number
-    heading?: number
-    speed?: number
-    altitude?: number
+    altitude?: number | null
+    altitudeAccuracy?: number | null
+    heading?: number | null
+    speed?: number | null
+    timestamp: number
 }
 
 export default function useCurrentLocation(watch = false): {
@@ -38,9 +40,11 @@ export default function useCurrentLocation(watch = false): {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
                 accuracy: position.coords.accuracy,
-                heading: position.coords.heading || undefined,
-                speed: position.coords.speed || undefined,
-                altitude: position.coords.altitude || undefined,
+                altitude: position.coords.altitude,
+                altitudeAccuracy: position.coords.altitudeAccuracy,
+                heading: position.coords.heading,
+                speed: position.coords.speed,
+                timestamp: position.timestamp,
             }
             console.log("Current location:", currentLocation)
             setLocation(currentLocation)
@@ -55,7 +59,7 @@ export default function useCurrentLocation(watch = false): {
         const options: PositionOptions = {
             enableHighAccuracy: true,
             timeout: 15000,
-            maximumAge: 30000,
+            maximumAge: 60000,
         }
 
         let watcherId: number
