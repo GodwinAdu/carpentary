@@ -13,7 +13,7 @@ export function Footer() {
                                 <Hammer className="h-5 w-5 text-white" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-lg font-bold">CraftCarpentry</span>
+                                <span className="text-lg font-bold">GML Roofing</span>
                                 <span className="text-xs text-slate-400">Building Excellence</span>
                             </div>
                         </Link>
@@ -142,7 +142,7 @@ export function Footer() {
                 <div className="border-t border-slate-800 mt-12 pt-8">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="text-sm text-slate-400">
-                            © {new Date().getFullYear()} CraftCarpentry. All rights reserved.
+                            © {new Date().getFullYear()} GML Roofing Systems. All rights reserved.
                         </div>
                         <div className="flex gap-6 text-sm">
                             <Link href="#" className="text-slate-400 hover:text-white transition-colors">

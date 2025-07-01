@@ -10,7 +10,7 @@ export function Testimonials() {
             location: "Oakville, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "CraftCarpentry transformed our vision into reality. Their attention to detail and quality craftsmanship exceeded our expectations. The team was professional, punctual, and delivered exactly what they promised.",
+            text: "GML Roofing System transformed our vision into reality. Their attention to detail and quality craftsmanship exceeded our expectations. The team was professional, punctual, and delivered exactly what they promised.",
         },
         {
             name: "Michael Chen",
@@ -18,7 +18,7 @@ export function Testimonials() {
             location: "Toronto, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "We've worked with CraftCarpentry on multiple commercial projects. Their expertise in rooftop construction and building materials is unmatched. They consistently deliver high-quality work on time and within budget.",
+            text: "We've worked with GML Roofing System on multiple commercial projects. Their expertise in rooftop construction and building materials is unmatched. They consistently deliver high-quality work on time and within budget.",
         },
         {
             name: "Emily Rodriguez",
@@ -26,7 +26,7 @@ export function Testimonials() {
             location: "Mississauga, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "The custom millwork and cabinetry from CraftCarpentry is absolutely stunning. Their craftsmen are true artists who understand both form and function. I recommend them to all my clients.",
+            text: "The custom millwork and cabinetry from GML Roofing System is absolutely stunning. Their craftsmen are true artists who understand both form and function. I recommend them to all my clients.",
         },
         {
             name: "David Thompson",
@@ -34,7 +34,7 @@ export function Testimonials() {
             location: "Burlington, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "CraftCarpentry handled our restaurant renovation with incredible skill. They worked around our schedule and delivered a beautiful space that our customers love. The quality of their work is exceptional.",
+            text: "GML Roofing System handled our restaurant renovation with incredible skill. They worked around our schedule and delivered a beautiful space that our customers love. The quality of their work is exceptional.",
         },
         {
             name: "Lisa Park",
@@ -42,7 +42,7 @@ export function Testimonials() {
             location: "Hamilton, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "Our heritage home restoration was a complex project, but CraftCarpentry handled it with expertise and care. They preserved the original character while adding modern functionality. Truly impressive work.",
+            text: "Our heritage home restoration was a complex project, but GML Roofing System handled it with expertise and care. They preserved the original character while adding modern functionality. Truly impressive work.",
         },
         {
             name: "Robert Wilson",
@@ -50,7 +50,7 @@ export function Testimonials() {
             location: "Markham, ON",
             image: "/placeholder.svg?height=80&width=80",
             rating: 5,
-            text: "I've collaborated with CraftCarpentry on several projects. Their technical knowledge and problem-solving abilities are outstanding. They bring architectural visions to life with precision and artistry.",
+            text: "I've collaborated with GML Roofing System on several projects. Their technical knowledge and problem-solving abilities are outstanding. They bring architectural visions to life with precision and artistry.",
         },
     ]
 
@@ -65,7 +65,7 @@ export function Testimonials() {
                         What Our Clients <span className="text-amber-600">Say About Us</span>
                     </h2>
                     <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                        Don't just take our word for it. Here's what our satisfied clients have to say about our work and service.
+                        Don&apos;t just take our word for it. Here&apos;s what our satisfied clients have to say about our work and service.
                     </p>
                 </div>
 

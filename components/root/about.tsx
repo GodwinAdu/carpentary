@@ -33,13 +33,13 @@ export function About() {
                     <div className="space-y-8">
                         <div className="space-y-4">
                             <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-medium">
-                                About CraftCarpentry
+                                About GML Roofing Systems
                             </div>
                             <h2 className="text-3xl lg:text-4xl font-bold text-slate-900">
                                 Building Dreams with <span className="text-amber-600">Precision & Care</span>
                             </h2>
                             <p className="text-lg text-slate-600 leading-relaxed">
-                                For over two decades, CraftCarpentry has been the trusted name in premium building materials and expert
+                                For over two decades, GML Roofing Systems has been the trusted name in premium building materials and expert
                                 carpentry services. We specialize in custom woodwork, rooftop installations, and comprehensive building
                                 solutions.
                             </p>

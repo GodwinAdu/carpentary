@@ -51,7 +51,7 @@ export function Contact() {
                             </span>
                         </h2>
                         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                            Contact us today for a free consultation and quote. We're here to help bring your vision to life.
+                            Contact us today for a free consultation and quote. We&#39;re here to help bring your vision to life.
                         </p>
                     </div>
                 </ScrollReveal>
@@ -118,7 +118,7 @@ export function Contact() {
                             <Card className="border-slate-200 shadow-xl bg-white/90 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle className="text-2xl text-slate-900">Get Your Free Quote</CardTitle>
-                                    <p className="text-slate-600">Fill out the form below and we'll get back to you within 24 hours.</p>
+                                    <p className="text-slate-600">Fill out the form below and we&#39;ll get back to you within 24 hours.</p>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     <form onSubmit={handleSubmit} className="space-y-6">

@@ -55,7 +55,7 @@ export function Header() {
                         </div>
                         <div className="hidden sm:flex items-center gap-2 hover:text-amber-400 transition-colors">
                             <Mail className="h-3 w-3" />
-                            <span>info@craftcarpentry.com</span>
+                            <span>info@GMLRoofing.com</span>
                         </div>
                     </div>
                     <div className="text-xs animate-pulse">Licensed & Insured • 25+ Years Experience</div>
@@ -70,7 +70,7 @@ export function Header() {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-lg font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
-                            CraftCarpentry
+                            GML Roofing
                         </span>
                         <span className="text-xs text-slate-600">Building Excellence</span>
                     </div>
