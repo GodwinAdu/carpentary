@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Phone, Mail, Hammer } from "lucide-react"
-import { AuthButtons } from "./auth-button"
+import { AuthModal } from "./auth-modal"
 
 
 export function Header() {
@@ -94,7 +94,7 @@ export function Header() {
                 <div className="flex items-center gap-4">
                     {/* Auth Buttons - Hidden on mobile, shown on desktop */}
                     <div className="hidden md:flex">
-                        <AuthButtons />
+                        <AuthModal />
                     </div>
 
                     {/* Get Free Quote Button - Hidden on small screens */}
@@ -129,7 +129,7 @@ export function Header() {
                                 {/* Mobile Auth Buttons */}
                                 <div className="mt-6 space-y-3 px-4">
                                     <div className="text-sm font-medium text-slate-700 mb-2">Account Access</div>
-                                    <AuthButtons />
+                                    <AuthModal />
                                 </div>
 
                                 <Button className="mt-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
