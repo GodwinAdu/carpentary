@@ -14,6 +14,7 @@ interface SocketContextType {
     currentSocketId: string | null
     typingUsers: TypingUser[]
     latency: number | null
+    connectionStatus: "connecting" | "connected" | "disconnected" | "reconnecting"
     emit: (event: string, data: unknown) => void
     on: (event: string, callback: (data: unknown) => void) => void
     off: (event: string, callback?: (data: unknown) => void) => void
@@ -56,6 +57,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
         currentSocketId: socketConnection.currentSocketId,
         typingUsers: socketConnection.typingUsers,
         latency: socketConnection.latency,
+        connectionStatus: socketConnection.connectionStatus,
         emit: (...args: [string, unknown]) => socketConnection.socket?.emit(...args),
         on: (...args: [string, (data: unknown) => void]) => socketConnection.socket?.on(...args),
         off: (...args: [string, ((data: unknown) => void)?]) => socketConnection.socket?.off(...args),
