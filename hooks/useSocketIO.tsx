@@ -24,15 +24,20 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
   const [latency, setLatency] = useState<number | null>(null)
   const [currentSocketId, setCurrentSocketId] = useState<string | null>(null)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connecting" | "connected" | "disconnected" | "reconnecting"
+  >("disconnected")
 
   const { user, isLoading: userLoading } = useCurrentUser()
   const { location, isLoading: locationLoading } = useCurrentLocation()
 
   const reconnectAttempts = useRef(0)
-  const maxReconnectAttempts = 5
+  const maxReconnectAttempts = 10 // Increased for better resilience
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
+  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null)
   const hasJoinedSession = useRef(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const connectionCheckInterval = useRef<NodeJS.Timeout | null>(null)
 
   const joinTrackingSession = useCallback(() => {
     if (!socketRef.current?.connected || !user || hasJoinedSession.current) return
@@ -45,9 +50,9 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
       sessionId: "tracking-users",
       location: location
         ? {
-          latitude: location.latitude,
-          longitude: location.longitude,
-        }
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }
         : null,
       speed: location?.speed || null,
       accuracy: location?.accuracy || null,
@@ -63,40 +68,82 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     if (socketRef.current?.connected || userLoading) return
 
     console.log("🔌 Connecting to Socket.IO server:", serverUrl)
+    setConnectionStatus("connecting")
 
     const socket = io(serverUrl, {
+      // Enhanced connection options for Render stability
       transports: ["websocket", "polling"],
-      timeout: 10000,
-      forceNew: true,
+      timeout: 20000, // 20 seconds
+      forceNew: false, // Reuse existing connection if possible
       reconnection: true,
       reconnectionAttempts: maxReconnectAttempts,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelayMax: 10000, // Max 10 seconds between attempts
+      randomizationFactor: 0.5,
       withCredentials: true,
+
+      // Render-specific optimizations
+      upgrade: true,
+      rememberUpgrade: true,
+
+      // Polling configuration for unstable connections
+      polling: {
+        extraHeaders: {
+          "Cache-Control": "no-cache",
+        },
+      },
+
+      // WebSocket configuration
+      websocket: {
+        compression: true,
+      },
     })
 
-    // Core events
+    // Connection events
     socket.on("connect", () => {
       console.log("✅ Connected to Socket.IO server with ID:", socket.id)
       setIsConnected(true)
       setConnectionError(null)
       setCurrentSocketId(socket.id)
+      setConnectionStatus("connected")
       reconnectAttempts.current = 0
       hasJoinedSession.current = false
 
-      // Join session immediately if user is available
+      // Clear any pending reconnection
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current)
+        reconnectTimeout.current = null
+      }
+
+      // Join session after a short delay
       setTimeout(() => {
         joinTrackingSession()
-      }, 100)
+      }, 500)
 
-      // Ping monitoring
+      // Start ping monitoring
+      if (pingInterval.current) clearInterval(pingInterval.current)
       pingInterval.current = setInterval(() => {
-        const start = Date.now()
-        socket.emit("ping")
-        socket.once("pong", (data) => {
-          setLatency(Date.now() - start)
-        })
-      }, 5000)
+        if (socket.connected) {
+          const start = Date.now()
+          socket.emit("ping", { timestamp: start })
+
+          const timeout = setTimeout(() => {
+            console.warn("⚠️ Ping timeout - connection may be unstable")
+            setLatency(null)
+          }, 10000)
+
+          socket.once("pong", (data) => {
+            clearTimeout(timeout)
+            const latency = Date.now() - start
+            setLatency(latency)
+
+            // Log high latency
+            if (latency > 5000) {
+              console.warn(`⚠️ High latency detected: ${latency}ms`)
+            }
+          })
+        }
+      }, 30000) // Ping every 30 seconds
     })
 
     socket.on("disconnect", (reason) => {
@@ -104,17 +151,76 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
       setIsConnected(false)
       setCurrentSocketId(null)
       setTypingUsers([])
+      setConnectionStatus("disconnected")
       hasJoinedSession.current = false
-      if (pingInterval.current) clearInterval(pingInterval.current)
+
+      if (pingInterval.current) {
+        clearInterval(pingInterval.current)
+        pingInterval.current = null
+      }
+
+      // Handle different disconnect reasons
+      if (reason === "io server disconnect") {
+        // Server initiated disconnect - try to reconnect
+        console.log("🔄 Server disconnected, attempting reconnection...")
+        setConnectionStatus("reconnecting")
+        scheduleReconnect()
+      } else if (reason === "transport close" || reason === "transport error") {
+        // Network issues - try to reconnect
+        console.log("🔄 Network issue detected, attempting reconnection...")
+        setConnectionStatus("reconnecting")
+        scheduleReconnect()
+      }
     })
 
     socket.on("connect_error", (error) => {
       console.error("🚫 Connection error:", error)
       setConnectionError(error.message)
+      setConnectionStatus("reconnecting")
       reconnectAttempts.current++
+
       if (reconnectAttempts.current >= maxReconnectAttempts) {
-        setConnectionError("Failed to connect after multiple attempts")
+        setConnectionError("Failed to connect after multiple attempts. Please refresh the page.")
+        setConnectionStatus("disconnected")
+      } else {
+        scheduleReconnect()
       }
+    })
+
+    socket.on("reconnect", (attemptNumber) => {
+      console.log(`✅ Reconnected after ${attemptNumber} attempts`)
+      setConnectionError(null)
+      reconnectAttempts.current = 0
+    })
+
+    socket.on("reconnect_error", (error) => {
+      console.error("🔄 Reconnection error:", error)
+      setConnectionError(`Reconnection failed: ${error.message}`)
+    })
+
+    socket.on("reconnect_failed", () => {
+      console.error("❌ Reconnection failed after all attempts")
+      setConnectionError("Unable to reconnect. Please refresh the page.")
+      setConnectionStatus("disconnected")
+    })
+
+    // Server shutdown notification
+    socket.on("server-shutdown", (data) => {
+      console.log("🔄 Server shutdown notification:", data.message)
+      setConnectionError("Server is restarting. Reconnecting...")
+      setConnectionStatus("reconnecting")
+    })
+
+    // Connection confirmation
+    socket.on("connection-confirmed", (data) => {
+      console.log("✅ Connection confirmed:", data)
+      setConnectionError(null)
+    })
+
+    // Error handling
+    socket.on("error", (error) => {
+      console.error("❌ Socket error:", error)
+      setConnectionError(error.message || "Socket error occurred")
     })
 
     // User events
@@ -153,7 +259,6 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
 
     // Typing events
     socket.on("user-typing", (typingData: TypingUser) => {
-      console.log("⌨️ Typing update:", typingData)
       setTypingUsers((prev) => {
         const filtered = prev.filter((u) => u.userId !== typingData.userId)
         if (typingData.isTyping) {
@@ -164,18 +269,17 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     })
 
     socket.on("location-update", (data: any) => {
-      console.log("📍 Location update received:", data)
       setUsers((prev) =>
         prev.map((u) =>
           u.id === data.userId
             ? {
-              ...u,
-              location: data.location,
-              accuracy: data.accuracy,
-              speed: data.speed,
-              heading: data.heading,
-              lastSeen: data.timestamp || new Date().toISOString(),
-            }
+                ...u,
+                location: data.location,
+                accuracy: data.accuracy,
+                speed: data.speed,
+                heading: data.heading,
+                lastSeen: data.timestamp || new Date().toISOString(),
+              }
             : u,
         ),
       )
@@ -187,7 +291,6 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     })
 
     socket.on("message-reaction-update", (reactionData) => {
-      console.log("👍 Reaction update:", reactionData)
       setMessages((prev) =>
         prev.map((msg) => {
           if (msg.id === reactionData.messageId) {
@@ -233,6 +336,20 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     socketRef.current = socket
   }, [serverUrl, userLoading, joinTrackingSession])
 
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimeout.current) return
+
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000) // Exponential backoff, max 30s
+    console.log(`🔄 Scheduling reconnection in ${delay}ms (attempt ${reconnectAttempts.current + 1})`)
+
+    reconnectTimeout.current = setTimeout(() => {
+      reconnectTimeout.current = null
+      if (!socketRef.current?.connected) {
+        connect()
+      }
+    }, delay)
+  }, [connect])
+
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       console.log("🔌 Disconnecting Socket.IO")
@@ -240,48 +357,80 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
       socketRef.current.disconnect()
       socketRef.current = null
     }
+
     setIsConnected(false)
     setCurrentSocketId(null)
     setTypingUsers([])
+    setConnectionStatus("disconnected")
     hasJoinedSession.current = false
-    if (pingInterval.current) clearInterval(pingInterval.current)
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+
+    // Clear all intervals and timeouts
+    if (pingInterval.current) {
+      clearInterval(pingInterval.current)
+      pingInterval.current = null
+    }
+    if (reconnectTimeout.current) {
+      clearTimeout(reconnectTimeout.current)
+      reconnectTimeout.current = null
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = null
+    }
+    if (connectionCheckInterval.current) {
+      clearInterval(connectionCheckInterval.current)
+      connectionCheckInterval.current = null
+    }
   }, [])
 
-  // Actions
+  // Actions with error handling
   const sendLocationUpdate = useCallback((locationData: LocationData) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("location-update", locationData)
+      try {
+        socketRef.current.emit("location-update", locationData)
+      } catch (error) {
+        console.error("❌ Failed to send location update:", error)
+      }
     }
   }, [])
 
   const sendMessage = useCallback((message: string, messageType = "text") => {
     if (socketRef.current?.connected && message.trim()) {
-      socketRef.current.emit("send-message", { message: message.trim(), messageType })
+      try {
+        socketRef.current.emit("send-message", { message: message.trim(), messageType })
+      } catch (error) {
+        console.error("❌ Failed to send message:", error)
+      }
     }
   }, [])
 
   const startTyping = useCallback(() => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("typing-start")
+      try {
+        socketRef.current.emit("typing-start")
+      } catch (error) {
+        console.error("❌ Failed to start typing:", error)
+      }
     }
   }, [])
 
   const stopTyping = useCallback(() => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("typing-stop")
+      try {
+        socketRef.current.emit("typing-stop")
+      } catch (error) {
+        console.error("❌ Failed to stop typing:", error)
+      }
     }
   }, [])
 
   const handleTyping = useCallback(() => {
     startTyping()
 
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
 
-    // Set new timeout to stop typing after 1 second of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping()
     }, 1000)
@@ -289,28 +438,44 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
 
   const addMessageReaction = useCallback((messageId: string, emoji: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("message-reaction", { messageId, emoji, action: "add" })
+      try {
+        socketRef.current.emit("message-reaction", { messageId, emoji, action: "add" })
+      } catch (error) {
+        console.error("❌ Failed to add reaction:", error)
+      }
     }
   }, [])
 
   const removeMessageReaction = useCallback((messageId: string, emoji: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("message-reaction", { messageId, emoji, action: "remove" })
+      try {
+        socketRef.current.emit("message-reaction", { messageId, emoji, action: "remove" })
+      } catch (error) {
+        console.error("❌ Failed to remove reaction:", error)
+      }
     }
   }, [])
 
   const updateStatus = useCallback((status: User["status"]) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("status-update", status)
+      try {
+        socketRef.current.emit("status-update", status)
+      } catch (error) {
+        console.error("❌ Failed to update status:", error)
+      }
     }
   }, [])
 
   const updatePresence = useCallback((isActive: boolean) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("presence-update", {
-        isActive,
-        lastActivity: new Date().toISOString(),
-      })
+      try {
+        socketRef.current.emit("presence-update", {
+          isActive,
+          lastActivity: new Date().toISOString(),
+        })
+      } catch (error) {
+        console.error("❌ Failed to update presence:", error)
+      }
     }
   }, [])
 
@@ -368,6 +533,27 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     }
   }, [updatePresence])
 
+  // Connection health monitoring
+  useEffect(() => {
+    if (connectionCheckInterval.current) {
+      clearInterval(connectionCheckInterval.current)
+    }
+
+    connectionCheckInterval.current = setInterval(() => {
+      if (socketRef.current && !socketRef.current.connected && connectionStatus !== "connecting") {
+        console.log("🔍 Connection health check failed, attempting reconnection...")
+        setConnectionStatus("reconnecting")
+        connect()
+      }
+    }, 60000) // Check every minute
+
+    return () => {
+      if (connectionCheckInterval.current) {
+        clearInterval(connectionCheckInterval.current)
+      }
+    }
+  }, [connect, connectionStatus])
+
   // Init effect
   useEffect(() => {
     if (autoConnect && !userLoading) {
@@ -380,6 +566,7 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
     socket: socketRef.current,
     isConnected,
     connectionError,
+    connectionStatus,
     users,
     messages,
     userCount,
