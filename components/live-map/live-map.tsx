@@ -3,47 +3,19 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
-import { useSocketIO } from "@/hooks/useSocketIO"
-
+import { useSocket } from "@/providers/socket-provider"
 import { UserListPanel } from "./user-list-panel"
+import { ConnectionStatus } from "./connection-status"
+import { AdvancedChatPanel } from "./advanced-chat-panel"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Users, MessageCircle, Download, Navigation, Send, X, AlertTriangle } from "lucide-react"
+import { Users, MessageCircle, Download, Navigation, AlertTriangle, Zap } from "lucide-react"
+import { UserSimulator } from "./user-simulator"
 import useCurrentLocation from "@/hooks/useTrackingLocatio"
 
-// Set Mapbox access token
+// Set your Mapbox access token here
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
-
-interface User {
-    id: string
-    name: string
-    role: "admin" | "supervisor" | "worker"
-    location: {
-        latitude: number
-        longitude: number
-        accuracy?: number
-        heading?: number
-        speed?: number
-    }
-    status: "online" | "away" | "offline"
-    lastSeen: Date
-    trail: Array<{
-        latitude: number
-        longitude: number
-        timestamp: Date
-    }>
-}
-
-interface ChatMessage {
-    id: string
-    userId: string
-    userName: string
-    message: string
-    timestamp: Date
-}
 
 const roleColors = {
     admin: "#ef4444",
@@ -51,28 +23,26 @@ const roleColors = {
     worker: "#10b981",
 }
 
+const roleIcons = {
+    admin: "👑",
+    supervisor: "👷‍♂️",
+    worker: "🔨",
+}
+
 export function LiveMap() {
+    const { socket, isConnected, connectionCount, users, messages, typingUsers, latency } = useSocket()
     const mapContainer = useRef<HTMLDivElement>(null)
     const map = useRef<mapboxgl.Map | null>(null)
     const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map())
     const trailSourcesRef = useRef<Set<string>>(new Set())
     const initialized = useRef(false)
 
-    const [users, setUsers] = useState<User[]>([])
     const [selectedUser, setSelectedUser] = useState<string | null>(null)
     const [autoFollow, setAutoFollow] = useState(false)
     const [showUserList, setShowUserList] = useState(true)
     const [showChat, setShowChat] = useState(false)
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-    const [newMessage, setNewMessage] = useState("")
     const [isRecording, setIsRecording] = useState(false)
-    const [recordedRoute, setRecordedRoute] = useState<
-        Array<{
-            latitude: number
-            longitude: number
-            timestamp: Date
-        }>
-    >([])
+    const [mapLoaded, setMapLoaded] = useState(false)
 
     const { location, isLoading: locationLoading } = useCurrentLocation({
         enableHighAccuracy: true,
@@ -80,146 +50,95 @@ export function LiveMap() {
         maximumAge: 5000,
     })
 
-    const { socket, isConnected } = useSocketIO({
-        url: process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:4000",
-    })
-
-    // Initialize map once
+    // Initialize map
     useEffect(() => {
-        if (!mapContainer.current || map.current || initialized.current || !MAPBOX_TOKEN) return
+        if (!mapContainer.current || map.current || initialized.current) return
 
+        if (!MAPBOX_TOKEN) {
+            console.error("❌ Mapbox token not found")
+            return
+        }
+
+        console.log("🗺️ Initializing Mapbox map...")
         initialized.current = true
         mapboxgl.accessToken = MAPBOX_TOKEN
 
-        map.current = new mapboxgl.Map({
-            container: mapContainer.current,
-            style: "mapbox://styles/mapbox/streets-v12",
-            center: [-74.006, 40.7128], // NYC default
-            zoom: 13,
-            attributionControl: false,
-        })
+        try {
+            map.current = new mapboxgl.Map({
+                container: mapContainer.current,
+                style: "mapbox://styles/mapbox/streets-v12",
+                center: [-74.006, 40.7128],
+                zoom: 13,
+                attributionControl: false,
+                antialias: true,
+            })
 
-        map.current.addControl(new mapboxgl.NavigationControl(), "top-right")
-        map.current.addControl(
-            new mapboxgl.GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: true,
-                },
-                trackUserLocation: true,
-                showUserHeading: true,
-            }),
-            "top-right",
-        )
+            map.current.on("load", () => {
+                console.log("✅ Map loaded successfully")
+                setMapLoaded(true)
+            })
 
-        map.current.addControl(
-            new mapboxgl.AttributionControl({
-                compact: true,
-            }),
-            "bottom-right",
-        )
+            map.current.on("error", (e) => {
+                console.error("❌ Map error:", e)
+            })
+
+            map.current.addControl(new mapboxgl.NavigationControl(), "top-right")
+            map.current.addControl(
+                new mapboxgl.GeolocateControl({
+                    positionOptions: { enableHighAccuracy: true },
+                    trackUserLocation: true,
+                    showUserHeading: true,
+                }),
+                "top-right",
+            )
+            map.current.addControl(
+                new mapboxgl.AttributionControl({
+                    compact: true,
+                }),
+                "bottom-right",
+            )
+        } catch (error) {
+            console.error("❌ Failed to initialize map:", error)
+        }
 
         return () => {
             if (map.current) {
+                console.log("🧹 Cleaning up map...")
                 map.current.remove()
                 map.current = null
             }
             initialized.current = false
+            setMapLoaded(false)
         }
     }, [])
 
-    // Handle location updates
-    const handleLocationUpdate = useCallback(() => {
-        if (!location || !socket || !isConnected) return
+    // Update markers and trails
+    const updateMarkersAndTrails = useCallback(() => {
+        if (!map.current || !mapLoaded) return
 
-        socket.emit("location-update", {
-            userId: "current-user",
-            location: {
-                latitude: location.latitude,
-                longitude: location.longitude,
-                accuracy: location.accuracy,
-                heading: location.heading,
-                speed: location.speed,
-            },
-            timestamp: new Date(),
-        })
+        console.log("🗺️ Updating markers for", users.length, "users")
 
-        if (isRecording) {
-            setRecordedRoute((prev) => [
-                ...prev,
-                {
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                    timestamp: new Date(),
-                },
-            ])
-        }
-
-        if (map.current && users.length === 0) {
-            map.current.setCenter([location.longitude, location.latitude])
-        }
-    }, [location, socket, isConnected, isRecording, users.length])
-
-    useEffect(() => {
-        handleLocationUpdate()
-    }, [handleLocationUpdate])
-
-    // Socket event handlers
-    useEffect(() => {
-        if (!socket) return
-
-        const handleUserUpdate = (userData: User) => {
-            setUsers((prev) => {
-                const existing = prev.find((u) => u.id === userData.id)
-                if (existing) {
-                    return prev.map((u) => (u.id === userData.id ? userData : u))
-                }
-                return [...prev, userData]
-            })
-        }
-
-        const handleUserDisconnect = (userId: string) => {
-            setUsers((prev) => prev.filter((u) => u.id !== userId))
-
-            const marker = markersRef.current.get(userId)
-            if (marker) {
+        const currentUserIds = new Set(users.map((u) => u.id))
+        markersRef.current.forEach((marker, userId) => {
+            if (!currentUserIds.has(userId)) {
+                console.log(`🗑️ Removing marker for user ${userId}`)
                 marker.remove()
                 markersRef.current.delete(userId)
             }
+        })
 
-            if (map.current && trailSourcesRef.current.has(userId)) {
-                if (map.current.getSource(`trail-${userId}`)) {
-                    map.current.removeLayer(`trail-${userId}`)
-                    map.current.removeSource(`trail-${userId}`)
-                }
-                trailSourcesRef.current.delete(userId)
+        users.forEach((user: User) => {
+            if (!user.location) {
+                console.log(`⚠️ No location for user ${user.name}`)
+                return
             }
-        }
 
-        const handleChatMessage = (message: ChatMessage) => {
-            setChatMessages((prev) => [...prev, message])
-        }
-
-        socket.on("user-update", handleUserUpdate)
-        socket.on("user-disconnect", handleUserDisconnect)
-        socket.on("chat-message", handleChatMessage)
-
-        return () => {
-            socket.off("user-update", handleUserUpdate)
-            socket.off("user-disconnect", handleUserDisconnect)
-            socket.off("chat-message", handleChatMessage)
-        }
-    }, [socket])
-
-    // Update markers and trails
-    const updateMarkersAndTrails = useCallback(() => {
-        if (!map.current) return
-
-        users.forEach((user) => {
-            const { id, name, role, location: userLocation, status, trail } = user
-
+            const { id, name, role, location: userLocation, status, trail, isTyping } = user
             let marker = markersRef.current.get(id)
 
             if (!marker) {
+                console.log(`🆕 Creating new marker for ${name} at [${userLocation.longitude}, ${userLocation.latitude}]`)
+
                 const el = document.createElement("div")
                 el.className = "user-marker"
                 el.style.cssText = `
@@ -234,13 +153,9 @@ export function LiveMap() {
           font-size: 18px;
           cursor: pointer;
           transition: all 0.3s ease;
+          z-index: 1000;
+          position: relative;
         `
-
-                const roleIcons = {
-                    admin: "👑",
-                    supervisor: "👷‍♂️",
-                    worker: "🔨",
-                }
 
                 el.style.backgroundColor = status === "offline" ? "#6b7280" : roleColors[role]
                 el.textContent = roleIcons[role]
@@ -249,12 +164,30 @@ export function LiveMap() {
                     el.style.opacity = "0.6"
                 }
 
+                // Add typing indicator
+                if (isTyping) {
+                    const typingIndicator = document.createElement("div")
+                    typingIndicator.className = "typing-indicator"
+                    typingIndicator.style.cssText = `
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: pulse 1s infinite;
+          `
+                    el.appendChild(typingIndicator)
+                }
+
                 const popup = new mapboxgl.Popup({
                     offset: 25,
                     closeButton: true,
                     closeOnClick: false,
                 }).setHTML(`
-          <div class="p-3">
+          <div class="p-3 min-w-[200px]">
             <div class="flex items-center gap-2 mb-2">
               <span class="text-lg">${roleIcons[role]}</span>
               <div>
@@ -268,102 +201,104 @@ export function LiveMap() {
                 <span class="capitalize font-medium" style="color: ${status === "online" ? "#10b981" : status === "away" ? "#f59e0b" : "#6b7280"
                     }">${status}</span>
               </div>
-              ${userLocation.accuracy
-                        ? `
-                <div class="flex justify-between">
-                  <span>Accuracy:</span>
-                  <span>${Math.round(userLocation.accuracy)}m</span>
-                </div>
-              `
-                        : ""
-                    }
-              ${userLocation.speed
-                        ? `
-                <div class="flex justify-between">
-                  <span>Speed:</span>
-                  <span>${Math.round((userLocation.speed || 0) * 3.6)} km/h</span>
-                </div>
-              `
-                        : ""
-                    }
+              <div class="flex justify-between">
+                <span>Location:</span>
+                <span>${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}</span>
+              </div>
+              ${user.isTyping ? '<div class="text-green-600 text-xs">💬 Typing...</div>' : ""}
             </div>
           </div>
         `)
 
-                marker = new mapboxgl.Marker(el)
-                    .setLngLat([userLocation.longitude, userLocation.latitude])
-                    .setPopup(popup)
-                    .addTo(map.current!)
+                try {
+                    marker = new mapboxgl.Marker(el)
+                        .setLngLat([userLocation.longitude, userLocation.latitude])
+                        .setPopup(popup)
+                        .addTo(map.current!)
 
-                markersRef.current.set(id, marker)
+                    markersRef.current.set(id, marker)
 
-                el.addEventListener("click", () => {
-                    setSelectedUser(id)
-                    if (autoFollow) {
-                        map.current?.flyTo({
-                            center: [userLocation.longitude, userLocation.latitude],
-                            zoom: 16,
-                            duration: 1000,
-                        })
-                    }
-                })
+                    el.addEventListener("click", () => {
+                        setSelectedUser(id)
+                        if (autoFollow) {
+                            map.current?.flyTo({
+                                center: [userLocation.longitude, userLocation.latitude],
+                                zoom: 16,
+                                duration: 1000,
+                            })
+                        }
+                    })
+                } catch (error) {
+                    console.error(`❌ Failed to create marker for ${name}:`, error)
+                }
             } else {
-                marker.setLngLat([userLocation.longitude, userLocation.latitude])
+                // Update existing marker position
+                try {
+                    marker.setLngLat([userLocation.longitude, userLocation.latitude])
+                } catch (error) {
+                    console.error(`❌ Failed to update marker for ${name}:`, error)
+                }
             }
 
-            if (trail.length > 1) {
+            // Handle trails
+            if (trail && trail.length > 1) {
                 const trailId = `trail-${id}`
+                try {
+                    if (!trailSourcesRef.current.has(id)) {
+                        console.log(`🛤️ Creating trail for ${name}`)
 
-                if (!trailSourcesRef.current.has(id)) {
-                    const trailData = {
-                        type: "Feature" as const,
-                        properties: {},
-                        geometry: {
-                            type: "LineString" as const,
-                            coordinates: trail.map((point) => [point.longitude, point.latitude]),
-                        },
-                    }
-
-                    map.current!.addSource(trailId, {
-                        type: "geojson",
-                        data: trailData,
-                    })
-
-                    map.current!.addLayer({
-                        id: trailId,
-                        type: "line",
-                        source: trailId,
-                        layout: {
-                            "line-join": "round",
-                            "line-cap": "round",
-                        },
-                        paint: {
-                            "line-color": roleColors[role],
-                            "line-width": 3,
-                            "line-opacity": 0.7,
-                        },
-                    })
-
-                    trailSourcesRef.current.add(id)
-                } else {
-                    const source = map.current!.getSource(trailId) as mapboxgl.GeoJSONSource
-                    if (source) {
-                        source.setData({
-                            type: "Feature",
+                        const trailData = {
+                            type: "Feature" as const,
                             properties: {},
                             geometry: {
-                                type: "LineString",
+                                type: "LineString" as const,
                                 coordinates: trail.map((point) => [point.longitude, point.latitude]),
                             },
+                        }
+
+                        map.current!.addSource(trailId, {
+                            type: "geojson",
+                            data: trailData,
                         })
+
+                        map.current!.addLayer({
+                            id: trailId,
+                            type: "line",
+                            source: trailId,
+                            layout: {
+                                "line-join": "round",
+                                "line-cap": "round",
+                            },
+                            paint: {
+                                "line-color": roleColors[role],
+                                "line-width": 3,
+                                "line-opacity": 0.7,
+                            },
+                        })
+
+                        trailSourcesRef.current.add(id)
+                    } else {
+                        const source = map.current!.getSource(trailId) as mapboxgl.GeoJSONSource
+                        if (source) {
+                            source.setData({
+                                type: "Feature",
+                                properties: {},
+                                geometry: {
+                                    type: "LineString",
+                                    coordinates: trail.map((point) => [point.longitude, point.latitude]),
+                                },
+                            })
+                        }
                     }
+                } catch (error) {
+                    console.error(`❌ Failed to handle trail for ${name}:`, error)
                 }
             }
         })
 
         if (autoFollow && selectedUser) {
-            const user = users.find((u) => u.id === selectedUser)
-            if (user) {
+            const user = users.find((u: User) => u.id === selectedUser)
+            if (user && user.location) {
                 map.current!.flyTo({
                     center: [user.location.longitude, user.location.latitude],
                     zoom: 16,
@@ -371,35 +306,29 @@ export function LiveMap() {
                 })
             }
         }
-    }, [users, selectedUser, autoFollow])
+    }, [users, selectedUser, autoFollow, mapLoaded])
 
     useEffect(() => {
         updateMarkersAndTrails()
     }, [updateMarkersAndTrails])
 
-    const handleSendMessage = useCallback(() => {
-        if (!newMessage.trim() || !socket) return
-
-        const message: ChatMessage = {
-            id: Date.now().toString(),
-            userId: "current-user",
-            userName: "You",
-            message: newMessage.trim(),
-            timestamp: new Date(),
+    useEffect(() => {
+        if (location && map.current && mapLoaded) {
+            console.log(`📍 Centering map on user location: [${location.longitude}, ${location.latitude}]`)
+            map.current.flyTo({
+                center: [location.longitude, location.latitude],
+                zoom: 15,
+                duration: 2000,
+            })
         }
-
-        socket.emit("chat-message", message)
-        setNewMessage("")
-    }, [newMessage, socket])
+    }, [location, mapLoaded])
 
     const handleExportData = useCallback(() => {
         const data = {
             users,
-            chatMessages,
-            recordedRoute,
+            messages,
             timestamp: new Date(),
         }
-
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
@@ -409,58 +338,58 @@ export function LiveMap() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-    }, [users, chatMessages, recordedRoute])
-
-    const toggleRecording = useCallback(() => {
-        if (isRecording) {
-            setIsRecording(false)
-        } else {
-            setRecordedRoute([])
-            setIsRecording(true)
-        }
-    }, [isRecording])
-
-    const handleUserSelect = useCallback((userId: string | null) => {
-        setSelectedUser(userId)
-    }, [])
-
-    const handleAutoFollowToggle = useCallback((enabled: boolean) => {
-        setAutoFollow(enabled)
-    }, [])
+    }, [users, messages])
 
     if (!MAPBOX_TOKEN) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-100">
+            <div className="flex items-center justify-center h-screen w-screen bg-gray-100">
                 <Card className="p-6 max-w-md">
                     <div className="text-center space-y-4">
                         <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto" />
                         <h2 className="text-xl font-semibold">Mapbox Token Required</h2>
                         <p className="text-gray-600">Please set your Mapbox access token in the environment variables.</p>
-                        <code className="block bg-gray-100 p-2 rounded text-sm">NEXT_PUBLIC_MAPBOX_TOKEN=your_token_here</code>
+                        <code className="block bg-gray-100 p-2 rounded text-sm">
+                            NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_token_here
+                        </code>
                     </div>
                 </Card>
             </div>
         )
     }
 
+    const activeTypingCount = typingUsers.filter((t) => t.isTyping).length
+
     return (
-        <div className="relative h-screen w-full">
-            <div ref={mapContainer} className="absolute inset-0" />
+        <div className="relative h-screen w-screen overflow-hidden">
+            {/* Map Container */}
+            <div
+                ref={mapContainer}
+                className="absolute inset-0 w-full h-full"
+                style={{ minHeight: "100vh", minWidth: "100vw" }}
+            />
 
-            <div className="absolute top-4 left-4 z-10">
-                <Card className="p-3">
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`} />
-                        <span className="text-sm font-medium">{isConnected ? "Connected" : "Disconnected"}</span>
-                        {/* {isConnected && (
-                            <Badge variant="secondary" className="text-xs">
-                                {connectionCount} online
-                            </Badge>
-                        )} */}
-                    </div>
-                </Card>
-            </div>
+            {/* Loading Overlay */}
+            {!mapLoaded && (
+                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
+                    <Card className="p-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            <div>
+                                <div className="font-semibold">Loading Map...</div>
+                                <div className="text-sm text-gray-500">Initializing Mapbox GL</div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
+            {/* Connection Status */}
+            <ConnectionStatus />
+
+            {/* User Simulator */}
+            <UserSimulator />
+
+            {/* Controls */}
             <div className="absolute top-4 right-4 z-10 space-y-2">
                 <Button variant={showUserList ? "default" : "outline"} size="sm" onClick={() => setShowUserList(!showUserList)}>
                     <Users className="w-4 h-4 mr-1" />
@@ -470,10 +399,21 @@ export function LiveMap() {
                 <Button variant={showChat ? "default" : "outline"} size="sm" onClick={() => setShowChat(!showChat)}>
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Chat
-                    {chatMessages.length > 0 && <Badge className="ml-1 text-xs">{chatMessages.length}</Badge>}
+                    <div className="flex items-center gap-1 ml-1">
+                        {messages.length > 0 && <Badge className="text-xs">{messages.length}</Badge>}
+                        {activeTypingCount > 0 && (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 animate-pulse">
+                                {activeTypingCount} typing
+                            </Badge>
+                        )}
+                    </div>
                 </Button>
 
-                <Button variant={isRecording ? "destructive" : "outline"} size="sm" onClick={toggleRecording}>
+                <Button
+                    variant={isRecording ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setIsRecording(!isRecording)}
+                >
                     <Navigation className="w-4 h-4 mr-1" />
                     {isRecording ? "Stop Recording" : "Record Route"}
                 </Button>
@@ -482,59 +422,33 @@ export function LiveMap() {
                     <Download className="w-4 h-4 mr-1" />
                     Export
                 </Button>
+
+                {/* Latency Indicator */}
+                {latency !== null && (
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        {latency}ms
+                    </div>
+                )}
             </div>
 
+            {/* User List Panel */}
             {showUserList && (
-                <div className="absolute left-4 top-20 z-10 w-80">
+                <div className="absolute left-4 top-40 z-10 w-80">
                     <UserListPanel
                         users={users}
                         selectedUser={selectedUser}
-                        onSelectUser={handleUserSelect}
+                        onSelectUser={setSelectedUser}
                         autoFollow={autoFollow}
-                        onToggleAutoFollow={handleAutoFollowToggle}
+                        onToggleAutoFollow={setAutoFollow}
                     />
                 </div>
             )}
 
-            {showChat && (
-                <div className="absolute right-4 top-32 z-10 w-80">
-                    <Card className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold">Live Chat</h3>
-                            <Button variant="ghost" size="sm" onClick={() => setShowChat(false)}>
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
+            {/* Advanced Chat Panel */}
+            <AdvancedChatPanel isOpen={showChat} onClose={() => setShowChat(false)} />
 
-                        <ScrollArea className="h-64 mb-3">
-                            <div className="space-y-2">
-                                {chatMessages.map((msg) => (
-                                    <div key={msg.id} className="p-2 bg-gray-50 rounded text-sm">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="font-medium">{msg.userName}</span>
-                                            <span className="text-xs text-gray-500">{msg.timestamp.toLocaleTimeString()}</span>
-                                        </div>
-                                        <p>{msg.message}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Type a message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                            />
-                            <Button size="sm" onClick={handleSendMessage}>
-                                <Send className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
-            )}
-
+            {/* Location Loading */}
             {locationLoading && (
                 <div className="absolute bottom-4 left-4 z-10">
                     <Card className="p-3">
@@ -546,13 +460,13 @@ export function LiveMap() {
                 </div>
             )}
 
+            {/* Recording Status */}
             {isRecording && (
                 <div className="absolute bottom-4 right-4 z-10">
                     <Card className="p-3">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                             <span className="text-sm font-medium">Recording Route</span>
-                            <Badge variant="secondary">{recordedRoute.length} points</Badge>
                         </div>
                     </Card>
                 </div>

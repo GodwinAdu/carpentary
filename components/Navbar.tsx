@@ -5,10 +5,11 @@ import { Separator } from "./ui/separator";
 import { useTourControl } from "@/hooks/use-tour-control";
 import UserDropdown from "./commons/user-dropdown";
 import FullScreenButton from "./commons/FullScreenButton";
-import { buttonVariants } from "./ui/button";
+import { Button, buttonVariants } from "./ui/button";
 import { Map, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import LiveChat from "./LiveChat";
 
 
 const Navbar = ({ user }: { user: IEmployee }) => {
@@ -41,6 +42,7 @@ const Navbar = ({ user }: { user: IEmployee }) => {
 
             <div className=".dashboard-stats flex gap-4 ml-auto items-center pr-10">
                 {/* <AdvancedQuickActionsDropdown /> */}
+                <LiveChat />
                 <Link href="/map" className={cn(buttonVariants({size:"sm"}))} ><Map/>Map Search</Link>
                 <div className="fullscreen">
 

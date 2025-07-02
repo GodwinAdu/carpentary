@@ -1,122 +1,114 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 
-interface LocationData {
-    latitude: number
-    longitude: number
-    accuracy: number
-    altitude?: number
-    altitudeAccuracy?: number
-    heading?: number
-    speed?: number
-    timestamp: number
-}
 
 interface UseCurrentLocationOptions {
     enableHighAccuracy?: boolean
     timeout?: number
     maximumAge?: number
+    watchPosition?: boolean
 }
 
 interface UseCurrentLocationReturn {
     location: LocationData | null
-    accuracy?: number
-    speed?: number
-    heading?: number
-    error: string | null
     isLoading: boolean
-    requestLocation: () => void
+    error: string | null
+    getCurrentLocation: () => void
 }
 
-export function useCurrentLocation(options: UseCurrentLocationOptions = {}): UseCurrentLocationReturn {
-    const [location, setLocation] = useState<LocationData | null>(null)
-    const [error, setError] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
-    const watchIdRef = useRef<number | null>(null)
-    const optionsRef = useRef(options)
+export default function useCurrentLocation(options: UseCurrentLocationOptions = {}): UseCurrentLocationReturn {
+    const { enableHighAccuracy = true, timeout = 10000, maximumAge = 5000, watchPosition = true } = options
 
-    // Update options ref when options change
-    useEffect(() => {
-        optionsRef.current = options
-    }, [options])
+    const [location, setLocation] = useState<LocationData | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const handleSuccess = useCallback((position: GeolocationPosition) => {
-        const { coords } = position
-        setLocation({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            accuracy: coords.accuracy,
-            altitude: coords.altitude || undefined,
-            altitudeAccuracy: coords.altitudeAccuracy || undefined,
-            heading: coords.heading || undefined,
-            speed: coords.speed || undefined,
-            timestamp: position.timestamp,
-        })
-        setError(null)
+        const newLocation: LocationData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            speed: position.coords.speed || undefined,
+            heading: position.coords.heading || undefined,
+            timestamp: new Date().toISOString(),
+        }
+
+        setLocation(newLocation)
         setIsLoading(false)
+        setError(null)
     }, [])
 
     const handleError = useCallback((error: GeolocationPositionError) => {
-        let errorMessage = "An unknown error occurred."
+        let errorMessage = "Unknown location error"
+
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                errorMessage = "Location access denied by user."
+                errorMessage = "Location access denied by user"
                 break
             case error.POSITION_UNAVAILABLE:
-                errorMessage = "Location information is unavailable."
+                errorMessage = "Location information unavailable"
                 break
             case error.TIMEOUT:
-                errorMessage = "Location request timed out."
+                errorMessage = "Location request timed out"
                 break
         }
+
         setError(errorMessage)
         setIsLoading(false)
     }, [])
 
-    const requestLocation = useCallback(() => {
+    const getCurrentLocation = useCallback(() => {
         if (!navigator.geolocation) {
-            setError("Geolocation is not supported by this browser.")
+            setError("Geolocation is not supported by this browser")
+            setIsLoading(false)
             return
         }
 
         setIsLoading(true)
         setError(null)
 
-        const { enableHighAccuracy = false, timeout = 10000, maximumAge = 60000 } = optionsRef.current
-
-        const positionOptions: PositionOptions = {
+        const options: PositionOptions = {
             enableHighAccuracy,
             timeout,
             maximumAge,
         }
 
-        // Clear existing watch
-        if (watchIdRef.current !== null) {
-            navigator.geolocation.clearWatch(watchIdRef.current)
-        }
-
-        // Start watching position
-        watchIdRef.current = navigator.geolocation.watchPosition(handleSuccess, handleError, positionOptions)
-    }, [handleSuccess, handleError])
+        navigator.geolocation.getCurrentPosition(handleSuccess, handleError, options)
+    }, [enableHighAccuracy, timeout, maximumAge, handleSuccess, handleError])
 
     useEffect(() => {
+        if (!navigator.geolocation) {
+            setError("Geolocation is not supported by this browser")
+            setIsLoading(false)
+            return
+        }
+
+        const options: PositionOptions = {
+            enableHighAccuracy,
+            timeout,
+            maximumAge,
+        }
+
+        let watchId: number | null = null
+
+        if (watchPosition) {
+            watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options)
+        } else {
+            getCurrentLocation()
+        }
+
         return () => {
-            if (watchIdRef.current !== null) {
-                navigator.geolocation.clearWatch(watchIdRef.current)
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId)
             }
         }
-    }, [])
+    }, [watchPosition, getCurrentLocation, handleSuccess, handleError, enableHighAccuracy, timeout, maximumAge])
 
     return {
         location,
-        accuracy: location?.accuracy,
-        speed: location?.speed,
-        heading: location?.heading,
-        error,
         isLoading,
-        requestLocation,
+        error,
+        getCurrentLocation,
     }
 }
-
-export default useCurrentLocation

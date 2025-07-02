@@ -120,3 +120,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+
+/* Mapbox GL CSS overrides */
+.mapboxgl-map {
+  font-family: inherit;
+}
+
+.mapboxgl-popup-content {
+  padding: 0;
+  border-radius: 8px;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 18px;
+  padding: 4px;
+}
+
+.user-marker {
+  transition: transform 0.2s ease;
+}
+
+.user-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Ensure full height for the app */
+.full-height {
+  height: 100vh;
+  width: 100vw;
+}
