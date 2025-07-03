@@ -118,7 +118,7 @@ export function AuthModal() {
 
             if (role === "worker") {
                 user = await loginUser(data)
-                router.push("/dashboard")
+                window.location.assign("/dashboard")
             }
 
             signInForm.reset()

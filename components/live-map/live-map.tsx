@@ -156,7 +156,7 @@ export function LiveMap() {
                     showZoom: true,
                     visualizePitch: true,
                 }),
-                "top-right",
+                "bottom-right",
             )
 
             map.current.addControl(
@@ -166,7 +166,7 @@ export function LiveMap() {
                     showUserHeading: true,
                     showAccuracyCircle: true,
                 }),
-                "top-right",
+                "bottom-right",
             )
 
             map.current.addControl(new mapboxgl.ScaleControl(), "bottom-left")
