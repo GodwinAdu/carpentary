@@ -17,7 +17,8 @@ import {
   BarChart3,
   DollarSign,
   CreditCard,
-  HousePlusIcon
+  HousePlusIcon,
+  Map
 } from "lucide-react"
 import {
   Collapsible,
@@ -70,6 +71,14 @@ export function NavMain({ role }: NavMainProps) {
       title: "Overview",
       url: `/dashboard`,
       icon: Menu,
+      isActive: false,
+      roleField: "dashboard"
+
+    },
+    {
+      title: "Live Tracking",
+      url: `/live-map`,
+      icon: Map,
       isActive: false,
       roleField: "dashboard"
 

@@ -122,7 +122,7 @@ export function AuthModal() {
             }
 
             signInForm.reset()
-            toast.success("Sign in successful!",{
+            toast.success("Sign in successful!", {
                 description: `Welcome back ${user.fullName}!`
             })
         } catch (error) {
@@ -135,7 +135,7 @@ export function AuthModal() {
     const handleClientSignUp = async (data: ClientSignUpFormData) => {
         setIsLoading(true)
         try {
-
+            console.log(data)
 
         } catch (error) {
             console.error("Sign up error:", error)
@@ -149,7 +149,7 @@ export function AuthModal() {
         try {
             await createUser(data)
             workerSignUpForm.reset()
-            router.push("/verify/email?email="+ data.email)
+            router.push("/verify/email?email=" + data.email)
             toast.success("Worker account created successfully!")
         } catch (error) {
             console.error("Sign up error:", error)
