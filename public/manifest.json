@@ -30,7 +30,7 @@
   ],
   "id": "/",
   "name": "GML Roofing",
-  "orientation": "portrait",
+  "orientation":"any",
   "scope": "/",
   "screenshots": [
     {
