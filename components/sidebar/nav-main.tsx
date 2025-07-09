@@ -81,7 +81,13 @@ export function NavMain({ role }: NavMainProps) {
       icon: Map,
       isActive: false,
       roleField: "dashboard"
-
+    },
+    {
+      title: "Customers",
+      url: `/dashboard/customers`,
+      icon: Map,
+      isActive: false,
+      roleField: "dashboard"
     },
     {
       title: "Building Tracking",

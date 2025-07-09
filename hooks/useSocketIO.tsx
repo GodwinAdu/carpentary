@@ -104,7 +104,7 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
       console.log("✅ Connected to Socket.IO server with ID:", socket.id)
       setIsConnected(true)
       setConnectionError(null)
-      setCurrentSocketId(socket.id)
+      setCurrentSocketId(socket.id!)
       setConnectionStatus("connected")
       reconnectAttempts.current = 0
       hasJoinedSession.current = false

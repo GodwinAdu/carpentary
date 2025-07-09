@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { searchBuilding } from "@/lib/actions/building.actions"
 
 interface SearchResult {
     id: string
@@ -14,20 +15,29 @@ interface SearchResult {
     place_type: string[]
     properties: Record<string, unknown>
     context?: Array<{ id: string; text: string }>
+    buildingType?: string
+    coordinates?: { lat: number; lng: number }
+    clientId?: string
+    description?: string
+    status?: string
+    updatedAt?: string | Date
+    createdAt?: string | Date
+    imgUrlsArray?: string[]
 }
 
 interface MapSearchProps {
     onLocationSelect: (coordinates: [number, number], name: string, details?: Record<string, unknown>) => void
-    accessToken: string
 }
 
-export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
+export function MapSearch({ onLocationSelect }: MapSearchProps) {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<SearchResult[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [showResults, setShowResults] = useState(false)
     const [recentSearches, setRecentSearches] = useState<SearchResult[]>([])
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    console.log(results, "results map")
 
     // Load recent searches from localStorage
     useEffect(() => {
@@ -65,22 +75,12 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
     }, [query])
 
     const performSearch = async (searchQuery: string) => {
-        if (!accessToken || !searchQuery.trim()) return
+        if (!searchQuery.trim()) return
 
         setIsLoading(true)
         try {
-            const response = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-                    searchQuery,
-                )}.json?access_token=${accessToken}&limit=8&types=poi,address,place`,
-            )
-
-            if (!response.ok) {
-                throw new Error("Search failed")
-            }
-
-            const data = await response.json()
-            setResults(data.features || [])
+            const response = await searchBuilding(searchQuery)
+            setResults(response || [])
             setShowResults(true)
         } catch (error) {
             console.error("Search error:", error)
@@ -92,6 +92,7 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
 
     const handleResultSelect = (result: SearchResult) => {
         // Save to recent searches
+        console.log(result, "result selects")
         const updated = [result, ...recentSearches.filter((r) => r.id !== result.id)].slice(0, 10)
         setRecentSearches(updated)
         localStorage.setItem("recentMapSearches", JSON.stringify(updated))
@@ -101,8 +102,31 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
         setShowResults(false)
         setResults([])
 
-        // Notify parent
-        onLocationSelect(result.center, result.place_name, result.properties)
+        // Create proper coordinates array
+        const coordinates: [number, number] =
+            result.center || (result.coordinates ? [result.coordinates.lng, result.coordinates.lat] : [0, 0])
+
+            console.log(result.imgUrlsArray,"images")
+
+        // Create structured location info for the parent component
+        const locationInfo = {
+            id: result.id,
+            buildingType: result.buildingType || result.place_name,
+            place_name: result.place_name,
+            center: coordinates,
+            coordinates: result.coordinates || { lat: coordinates[1], lng: coordinates[0] },
+            clientId: result.clientId || "",
+            description: result.description || "",
+            status: result.status || "unknown",
+            updatedAt: result.updatedAt || new Date(),
+            createdAt: result.createdAt || new Date(),
+            place_type: result.place_type || [],
+            properties: result.properties || {},
+            imgUrlsArray: result.imgUrlsArray || [],
+        }
+
+        // Notify parent with coordinates and structured data
+        onLocationSelect(coordinates, result.place_name, locationInfo)
     }
 
     const clearRecentSearches = () => {
@@ -176,9 +200,11 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
                                         <div className="flex items-start space-x-3">
                                             <span className="text-lg mt-0.5">{getPlaceIcon(result.place_type)}</span>
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate">{result.place_name.split(",")[0]}</div>
+                                                <div className="font-medium text-sm truncate">
+                                                    {result.buildingType || result.place_name.split(",")[0]}
+                                                </div>
                                                 <div className="text-xs text-muted-foreground truncate">
-                                                    {result.place_name.split(",").slice(1).join(",")}
+                                                    {result.place_name.split(",").slice(1).join(",") || result.description}
                                                 </div>
                                                 <Badge variant="secondary" className="text-xs mt-1">
                                                     {getPlaceCategory(result)}
@@ -192,7 +218,9 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
                         )}
 
                         {!isLoading && results.length === 0 && query.length >= 2 && (
-                            <div className="text-center py-4 text-sm text-muted-foreground">No results found for &quot;{query}&quot;</div>
+                            <div className="text-center py-4 text-sm text-muted-foreground">
+                                No results found for &quot;{query}&quot;
+                            </div>
                         )}
 
                         {!query && recentSearches.length > 0 && (
@@ -212,9 +240,11 @@ export function MapSearch({ onLocationSelect, accessToken }: MapSearchProps) {
                                         <div className="flex items-start space-x-3">
                                             <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate">{result.place_name.split(",")[0]}</div>
+                                                <div className="font-medium text-sm truncate">
+                                                    {result.buildingType || result.place_name.split(",")[0]}
+                                                </div>
                                                 <div className="text-xs text-muted-foreground truncate">
-                                                    {result.place_name.split(",").slice(1).join(",")}
+                                                    {result.place_name.split(",").slice(1).join(",") || result.description}
                                                 </div>
                                             </div>
                                         </div>

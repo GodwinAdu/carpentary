@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 
 
-const title = 'LobeChat';
+const title = 'GML Roofing';
 
 const metadata: Metadata = {
     appleWebApp: {

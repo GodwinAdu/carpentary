@@ -12,8 +12,7 @@ export function useCurrentUser() {
         // Simulate fetching current user data
         const fetchCurrentUser = async () => {
             try {
-                // Replace with actual API call
-                const userData = await currentUser(); // Assuming currentUser is a function that fetches user data0
+                const userData = await currentUser(); 
                 setUser(userData);
             } catch (err) {
                 console.error("Error fetching current user:", err);

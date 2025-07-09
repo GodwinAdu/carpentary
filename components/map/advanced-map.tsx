@@ -21,23 +21,22 @@ import { toast } from "sonner"
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || ""
 
 interface LocationInfo {
-    name: string
-    address: string
-    coordinates: [number, number]
-    category?: string
-    rating?: number
-    phone?: string
-    website?: string
-    hours?: string
-    description?: string
-    photos?: string[]
-    reviews?: Array<{
-        author: string
-        rating: number
-        text: string
-        date: string
-    }>
-    details?: Record<string, unknown>
+    id: string
+    imgUrlsArray: string[]
+    coordinates: { lat: number, lng: number }
+    buildingType: string
+    description: string
+    clientId: string
+    place_name: string
+    center: [number, number]
+    status: string
+    createdAt: Date,
+    updatedAt: Date,
+    place_type: string[],
+    properties: {
+        buildingType: string,
+        status: string,
+    },
 }
 
 export default function AdvancedMap() {
@@ -76,6 +75,8 @@ export default function AdvancedMap() {
     const [selectedLocation, setSelectedLocation] = useState<LocationInfo | null>(null)
     const [isRoutingMode, setIsRoutingMode] = useState(false)
     const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null)
+
+    console.log(selectedLocation, "checking selected location")
 
     // Sample data for clustering and heatmap - realistic NYC locations
     const sampleLocations = [
@@ -221,7 +222,7 @@ export default function AdvancedMap() {
             // Map load event for additional features
             mapRef.current.on("load", () => {
                 // Add terrain source with proper configuration
-                mapRef.current!.addSource("mapbox-dem", {
+                mapRef?.current?.addSource("mapbox-dem", {
                     type: "raster-dem",
                     url: "mapbox://mapbox.mapbox-terrain-dem-v1",
                     tileSize: 512,
@@ -764,7 +765,7 @@ export default function AdvancedMap() {
 
         // Enhanced location info with details
         const locationInfo: LocationInfo = {
-            name,
+            // buildingType,
             address: `${coordinates[1].toFixed(6)}, ${coordinates[0].toFixed(6)}`,
             coordinates,
             category: typeof details?.category === "string" ? details.category : undefined,
@@ -953,15 +954,26 @@ export default function AdvancedMap() {
 
         if (navigator.share) {
             navigator.share({
-                title: selectedLocation.name,
-                text: `Check out this location: ${selectedLocation.name}`,
+                title: selectedLocation.buildingType,
+                text: `Check out this location: ${selectedLocation.buildingType}`,
                 url: url,
             })
         } else {
             navigator.clipboard.writeText(url)
             toast.success("Location URL copied to clipboard")
         }
-    }, [selectedLocation])
+    }, [selectedLocation]);
+
+    // Handle client actions
+    const handleCall = useCallback((clientId: string) => {
+        // Implement call functionality
+        toast.info(`Calling client: ${clientId}`)
+    }, [])
+
+    const handleEmail = useCallback((clientId: string) => {
+        // Implement email functionality
+        toast.info(`Emailing client: ${clientId}`)
+    }, [])
 
     if (!mapboxgl.accessToken) {
         return (
@@ -975,6 +987,8 @@ export default function AdvancedMap() {
             </div>
         )
     }
+
+
 
     return (
         <div className="relative h-screen w-full">
@@ -1010,7 +1024,7 @@ export default function AdvancedMap() {
             />
 
             {/* Search */}
-            <MapSearch onLocationSelect={handleLocationSelect} accessToken={mapboxgl.accessToken} />
+            <MapSearch onLocationSelect={handleLocationSelect} />
 
             {/* Location Info Panel */}
             <LocationInfoPanel
@@ -1024,6 +1038,8 @@ export default function AdvancedMap() {
                 }}
                 onGetDirections={handleGetDirections}
                 onShareLocation={handleShareLocation}
+                onCall={handleCall}
+                onEmail={handleEmail}
             />
 
             {/* Drawing Tools */}

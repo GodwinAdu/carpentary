@@ -1,43 +1,31 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-    X,
-    Navigation,
-    Phone,
-    Globe,
-    Clock,
-    Star,
-    MapPin,
-    Share2,
-    Heart,
-    Camera,
-    MessageCircle,
-    ExternalLink,
-} from "lucide-react"
+import { X, Navigation, Clock, Star, MapPin, Share2, Heart, Building, Calendar, ImageIcon, Phone, Mail } from "lucide-react"
+import Image from "next/image"
 
 interface LocationInfo {
-    name: string
-    address: string
-    coordinates: [number, number]
-    category?: string
-    rating?: number
-    phone?: string
-    website?: string
-    hours?: string
-    description?: string
-    photos?: string[]
-    reviews?: Array<{
-        author: string
-        rating: number
-        text: string
-        date: string
-    }>
-    details?: Record<string, unknown>
+    id: string
+    imgUrlsArray: string[]
+    coordinates: { lat: number; lng: number } | [number, number]
+    buildingType: string
+    description: string
+    clientId: string
+    place_name: string
+    center: [number, number]
+    status: string
+    createdAt: Date | string
+    updatedAt: Date | string
+    place_type: string[]
+    properties: {
+        buildingType: string
+        status: string
+    }
 }
 
 interface LocationInfoPanelProps {
@@ -46,6 +34,8 @@ interface LocationInfoPanelProps {
     onGetDirections: (coordinates: [number, number]) => void
     onSaveLocation?: (location: LocationInfo) => void
     onShareLocation?: () => void
+    onCall?: (clientId: string) => void
+    onEmail?: (clientId: string) => void
 }
 
 export function LocationInfoPanel({
@@ -54,25 +44,44 @@ export function LocationInfoPanel({
     onGetDirections,
     onSaveLocation,
     onShareLocation,
+    onCall,
+    onEmail
 }: LocationInfoPanelProps) {
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+
     if (!location) return null
 
-    const formatCoordinates = (coords: [number, number]) => {
-        return `${coords[1].toFixed(6)}, ${coords[0].toFixed(6)}`
+    console.log(location, "testing locations ")
+
+    const formatCoordinates = (coords: [number, number] | { lat: number; lng: number }) => {
+        if (Array.isArray(coords)) {
+            return `${coords[1].toFixed(6)}, ${coords[0].toFixed(6)}`
+        } else {
+            return `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
+        }
     }
 
-    const getCategoryIcon = (category?: string) => {
-        if (!category) return "📍"
-        const cat = category.toLowerCase()
-        if (cat.includes("restaurant") || cat.includes("food")) return "🍽️"
-        if (cat.includes("hotel") || cat.includes("lodging")) return "🏨"
-        if (cat.includes("gas") || cat.includes("fuel")) return "⛽"
-        if (cat.includes("hospital") || cat.includes("medical")) return "🏥"
-        if (cat.includes("school") || cat.includes("education")) return "🏫"
-        if (cat.includes("bank") || cat.includes("atm")) return "🏦"
-        if (cat.includes("shop") || cat.includes("store")) return "🛍️"
-        if (cat.includes("park") || cat.includes("recreation")) return "🌳"
-        return "📍"
+    const getStatusColor = (status: string) => {
+        switch (status.toLowerCase()) {
+            case "completed":
+                return "bg-green-100 text-green-800 border-green-200"
+            case "in-progress":
+                return "bg-blue-100 text-blue-800 border-blue-200"
+            case "pending":
+                return "bg-yellow-100 text-yellow-800 border-yellow-200"
+            default:
+                return "bg-gray-100 text-gray-800 border-gray-200"
+        }
+    }
+
+    const formatDate = (dateString: string | Date) => {
+        return new Date(dateString).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
     }
 
     const renderStars = (rating: number) => {
@@ -103,149 +112,142 @@ export function LocationInfoPanel({
         return stars
     }
 
+    // Get coordinates in the correct format for directions
+    const getDirectionsCoordinates = (): [number, number] => {
+        if (Array.isArray(location.coordinates)) {
+            return location.coordinates
+        } else if (location.center) {
+            return location.center
+        } else {
+            return [location.coordinates.lng, location.coordinates.lat]
+        }
+    }
+
     return (
-        <Card className="absolute bottom-4 left-4 z-10 w-96 max-h-[calc(100vh-8rem)] shadow-lg">
+        <Card className="absolute bottom-4 left-4 z-10 w-96 shadow-lg">
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                            <span className="text-xl">{getCategoryIcon(location.category)}</span>
-                            <CardTitle className="text-lg truncate">{location.name}</CardTitle>
+                    <div className="flex-1">
+                        <CardTitle className="text-lg flex items-center space-x-2">
+                            <Building className="h-5 w-5" />
+                            <span>{location?.details.buildingType || location?.place_name}</span>
+                        </CardTitle>
+                        <div className="flex items-center space-x-2 mt-1">
+                            <Badge className={getStatusColor(location?.details.status || "unknown")}>{location?.details.status || "Unknown"}</Badge>
                         </div>
-                        {location.category && (
-                            <Badge variant="secondary" className="text-xs">
-                                {location.category.replace(/_/g, " ")}
-                            </Badge>
-                        )}
                     </div>
-                    <Button size="sm" variant="ghost" onClick={onClose} className="h-8 w-8 p-0">
+                    <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
             </CardHeader>
 
-            <CardContent className="pt-0">
-                <ScrollArea className="max-h-80">
-                    <div className="space-y-4">
-                        {/* Address */}
-                        <div className="flex items-start space-x-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <div className="text-sm text-muted-foreground">
-                                <div>{location.address}</div>
-                                <div className="text-xs font-mono mt-1">{formatCoordinates(location.coordinates)}</div>
-                            </div>
-                        </div>
-
-                        {/* Rating */}
-                        {location.rating && (
+            <CardContent className="pt-0 h-[50%]">
+                <ScrollArea className="h-[50%]">
+                    {/* Images */}
+                    {location.details.imgUrlsArray && location.details.imgUrlsArray.length > 0 && (
+                        <div className="space-y-2">
                             <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">{renderStars(location.rating)}</div>
-                                <span className="text-sm font-medium">{location.rating.toFixed(1)}</span>
-                                {location.reviews && (
-                                    <span className="text-xs text-muted-foreground">({location.reviews.length} reviews)</span>
+                                <ImageIcon className="h-4 w-4" />
+                                <span className="text-sm font-medium">Images</span>
+                            </div>
+                            <div className="relative">
+                                <Image
+                                    src={location.details.imgUrlsArray[selectedImageIndex] || "/placeholder.svg?height=200&width=300"}
+                                    alt={`${location.details.buildingType || location.details.place_name} image`}
+                                    width={300}
+                                    height={200}
+                                    className="w-full h-48 object-cover rounded-lg"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.src = "/placeholder.svg?height=200&width=300&text=Image+Not+Found"
+                                    }}
+                                />
+                                {location.details.imgUrlsArray.length > 0 && (
+                                    <div className="flex space-x-1 mt-2 overflow-x-auto">
+                                        {location.details.imgUrlsArray.map((img, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setSelectedImageIndex(index)}
+                                                className={`flex-shrink-0 w-12 h-12 rounded border-2 overflow-hidden ${selectedImageIndex === index ? "border-blue-500" : "border-gray-200"
+                                                    }`}
+                                            >
+                                                <Image
+                                                    src={img || "/placeholder.svg?height=48&width=48"}
+                                                    alt={`Thumbnail ${index + 1}`}
+                                                    width={48}
+                                                    height={48}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement
+                                                        target.src = "/placeholder.svg?height=48&width=48"
+                                                    }}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Description</h4>
+                        <p className="text-sm text-muted-foreground">{location.details.description || "No description available"}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Location */}
+                    <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                            <MapPin className="h-4 w-4" />
+                            <span className="text-sm font-medium">Location</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{formatCoordinates(location.coordinates)}</p>
+                    </div>
+
+                    {/* Timestamps */}
+                    {location.details.createdAt && (
+                        <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                                <Calendar className="h-4 w-4" />
+                                <span className="text-sm font-medium">Created</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{formatDate(location.details.createdAt)}</p>
+                            {location.details.updatedAt && location.details.updatedAt !== location.details.createdAt && (
+                                <>
+                                    <div className="flex items-center space-x-2">
+                                        <Clock className="h-4 w-4" />
+                                        <span className="text-sm font-medium">Last Updated</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{formatDate(location.details.updatedAt)}</p>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    <Separator />
+
+                    <div className="grid grid-cols-2 gap-2 py-2">
+                        {onCall && (
+                            <Button variant="outline" size="sm" onClick={() => onCall(location.details.clientId)}>
+                                <Phone className="h-4 w-4 mr-1" />
+                                Call
+                            </Button>
                         )}
 
-                        {/* Contact Info */}
-                        {(location.phone || location.website || location.hours) && (
-                            <>
-                                <Separator />
-                                <div className="space-y-2">
-                                    {location.phone && (
-                                        <div className="flex items-center space-x-2">
-                                            <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <a href={`tel:${location.phone}`} className="text-sm text-blue-600 hover:underline">
-                                                {location.phone}
-                                            </a>
-                                        </div>
-                                    )}
-                                    {location.website && (
-                                        <div className="flex items-center space-x-2">
-                                            <Globe className="h-4 w-4 text-muted-foreground" />
-                                            <a
-                                                href={location.website}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-sm text-blue-600 hover:underline flex items-center space-x-1"
-                                            >
-                                                <span>Visit website</span>
-                                                <ExternalLink className="h-3 w-3" />
-                                            </a>
-                                        </div>
-                                    )}
-                                    {location.hours && (
-                                        <div className="flex items-center space-x-2">
-                                            <Clock className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-sm">{location.hours}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-
-                        {/* Description */}
-                        {location.description && (
-                            <>
-                                <Separator />
-                                <div className="text-sm text-muted-foreground">{location.description}</div>
-                            </>
-                        )}
-
-                        {/* Photos */}
-                        {location.photos && location.photos.length > 0 && (
-                            <>
-                                <Separator />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <Camera className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium">Photos</span>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {location.photos.slice(0, 6).map((photo, index) => (
-                                            <div key={index} className="aspect-square rounded-md overflow-hidden bg-muted">
-                                                <img
-                                                    src={photo || "/placeholder.svg"}
-                                                    alt={`${location.name} photo ${index + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Reviews */}
-                        {location.reviews && location.reviews.length > 0 && (
-                            <>
-                                <Separator />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium">Recent Reviews</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {location.reviews.slice(0, 3).map((review, index) => (
-                                            <div key={index} className="text-sm">
-                                                <div className="flex items-center space-x-2 mb-1">
-                                                    <span className="font-medium">{review.author}</span>
-                                                    <div className="flex items-center space-x-1">{renderStars(review.rating)}</div>
-                                                    <span className="text-xs text-muted-foreground">{review.date}</span>
-                                                </div>
-                                                <p className="text-muted-foreground">{review.text}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
+                        {onEmail && (
+                            <Button variant="outline" size="sm" onClick={() => onEmail(location.details.clientId)}>
+                                <Mail className="h-4 w-4 mr-1" />
+                                Email
+                            </Button>
                         )}
                     </div>
-                </ScrollArea>
-
-                {/* Action Buttons */}
+                     {/* Action Buttons */}
                 <div className="flex space-x-2 mt-4 pt-4 border-t">
-                    <Button onClick={() => onGetDirections(location.coordinates)} className="flex-1" size="sm">
+                    <Button onClick={() => onGetDirections(getDirectionsCoordinates())} className="flex-1" size="sm">
                         <Navigation className="h-4 w-4 mr-2" />
                         Directions
                     </Button>
@@ -260,6 +262,7 @@ export function LocationInfoPanel({
                         </Button>
                     )}
                 </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     )

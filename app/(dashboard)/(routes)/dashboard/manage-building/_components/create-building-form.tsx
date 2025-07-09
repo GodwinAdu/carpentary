@@ -1,7 +1,4 @@
 "use client"
-
-import type React from "react"
-
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,55 +6,100 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Camera, MapPin, Save, CheckCircle, AlertCircle, Loader2, PlusCircle } from "lucide-react"
+import { Camera, MapPin, Save, CheckCircle, AlertCircle, Loader2, RotateCcw, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
-import { CameraCapture } from "./camera-capture"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { createBuilding } from "@/lib/actions/building.actions"
+import CustomerForm from "./customer-form"
+import { AdvancedCameraCapture } from "./camera-capture"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-type Status = {
-    value: string
-    label: string
+type Customer = {
+    _id: string
+    fullName: string
 }
-const statuses: Status[] = [
-    {
-        value: "backlog",
-        label: "Backlog",
-    },
-    {
-        value: "todo",
-        label: "Todo",
-    },
-    {
-        value: "in progress",
-        label: "In Progress",
-    },
-    {
-        value: "done",
-        label: "Done",
-    },
-    {
-        value: "canceled",
-        label: "Canceled",
-    },
+
+interface CapturePageProps {
+    customers: Customer[]
+}
+
+
+const buildingCategories = [
+    { label: "Residential", value: "residential" },
+    { label: "Single-Family House", value: "single_family" },
+    { label: "Multi-Family House", value: "multi_family" },
+    { label: "Apartment", value: "apartment" },
+    { label: "Condominium (Condo)", value: "condo" },
+    { label: "Townhouse", value: "townhouse" },
+    { label: "Bungalow", value: "bungalow" },
+    { label: "Duplex / Triplex", value: "duplex_triplex" },
+    { label: "Villa", value: "villa" },
+    { label: "Cottage", value: "cottage" },
+
+    { label: "Commercial", value: "commercial" },
+    { label: "Office Building", value: "office" },
+    { label: "Retail Store / Shop", value: "retail" },
+    { label: "Shopping Mall", value: "mall" },
+    { label: "Hotel / Motel", value: "hotel" },
+    { label: "Restaurant / Cafe", value: "restaurant" },
+    { label: "Supermarket", value: "supermarket" },
+    { label: "Warehouse (Commercial)", value: "commercial_warehouse" },
+
+    { label: "Industrial", value: "industrial" },
+    { label: "Factory", value: "factory" },
+    { label: "Distribution Center", value: "distribution_center" },
+    { label: "Workshop", value: "workshop" },
+
+    { label: "Institutional / Public", value: "public" },
+    { label: "School / University", value: "school" },
+    { label: "Hospital / Clinic", value: "hospital" },
+    { label: "Library", value: "library" },
+    { label: "Police Station", value: "police" },
+    { label: "Religious Building", value: "religious" },
+
+    { label: "Mixed-Use", value: "mixed_use" },
+    { label: "Residential & Commercial", value: "residential_commercial" },
+
+    { label: "Other", value: "other" },
+    { label: "Construction Site", value: "construction" },
+    { label: "Parking Garage", value: "parking" },
+    { label: "Event Center", value: "event_center" },
+    { label: "Cinema / Theater", value: "cinema" },
+    { label: "Agricultural Barn / Shed", value: "barn" },
 ]
-
-
-
-export default function CapturePage() {
-    const [image, setImage] = useState<string | null>(null)
+export default function CapturePage({ customers }: CapturePageProps) {
+    const [imageUrl, setImageUrl] = useState<string | null>(null)
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
     const [locationError, setLocationError] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [buildingType, setBuildingType] = useState("")
     const [description, setDescription] = useState("")
     const [open, setOpen] = useState(false)
-    const [selectedStatus, setSelectedStatus] = useState<Status | null>(
-        null
-    )
+    const [category, setCategory] = useState("")
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
+    const handleCapture = (uploadedImageUrl: string) => {
+        console.log("Image uploaded to:", uploadedImageUrl)
+        setImageUrl(uploadedImageUrl)
+        toast.success("Photo uploaded successfully!", {
+            description: "Your high-quality photo has been saved to the cloud",
+        })
+    }
+
+    const handleError = (error: string) => {
+        toast.error("Camera Error", {
+            description: error,
+        })
+    }
+
+    const handleReset = () => {
+        setImageUrl(null)
+        toast.info("Ready for new capture", {
+            description: "Camera is ready to capture a new photo.",
+        })
+    }
 
     const getCurrentLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -72,13 +114,13 @@ export default function CapturePage() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude,
                 })
-                toast("Location captured", {
+                toast.success("Location captured", {
                     description: "GPS coordinates have been recorded",
                 })
             },
             (error) => {
                 setLocationError(error.message)
-                toast(error.message, {
+                toast.error("Location Error", {
                     description: "Unable to retrieve location. Please check permissions.",
                 })
             },
@@ -86,35 +128,40 @@ export default function CapturePage() {
         )
     }, [])
 
-
     const handleSave = async () => {
-        if (!image || !location || !buildingType.trim()) {
-            toast("Please capture an image, get location, and enter a building type")
+        if (!imageUrl || !location || !buildingType.trim()) {
+            toast.error("Missing Information", {
+                description: "Please capture an image, get location, and enter a building type",
+            })
             return
         }
 
         setIsSaving(true)
         try {
             const values = {
-                image,
+                image: imageUrl, // Now this is the UploadThing URL
                 location,
                 buildingType,
                 description,
-                clientId: ""
-            };
+                clientId: selectedCustomer?._id || "",
+            }
 
             await createBuilding(values)
-
-            toast("Building saved successfully!")
+            toast.success("Building saved successfully!", {
+                description: "Your building data has been saved to the database",
+            })
 
             // Reset form
-            setImage(null)
+            setImageUrl(null)
             setLocation(null)
             setBuildingType("")
             setDescription("")
+            setSelectedCustomer(null)
         } catch (error) {
             console.error("Error saving building:", error)
-            toast("There was an error saving your building",)
+            toast.error("Save Error", {
+                description: "There was an error saving your building data",
+            })
         } finally {
             setIsSaving(false)
         }
@@ -131,30 +178,44 @@ export default function CapturePage() {
                                 <Camera className="h-5 w-5 mr-2" />
                                 Building Photo
                             </CardTitle>
-                            <CardDescription>Capture or upload a photo of the building</CardDescription>
+                            <CardDescription>
+                                Capture or upload a photo of the building (automatically saved to cloud)
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {!image ? (
-                                <CameraCapture
-                                    onCapture={(imageDataUrl) => {
-                                        setImage(imageDataUrl)
-                                        getCurrentLocation()
-                                    }}
-                                    onError={(error) => {
-                                        toast.error("Camera Error", {
-                                            description: error,
-                                        })
-                                    }}
-                                />
+                            {!imageUrl ? (
+                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 rounded-lg">
+                                    <AdvancedCameraCapture onCapture={handleCapture} onError={handleError} />
+                                </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <div className="relative aspect-video rounded-lg overflow-hidden">
-                                        <Image src={image || "/placeholder.svg"} alt="Captured building" fill className="object-cover" />
+                                    <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                        <Image
+                                            src={imageUrl || "/placeholder.svg"}
+                                            alt="Captured building photo"
+                                            className="w-full h-auto max-h-96 object-contain"
+                                            height={400}
+                                            width={600}
+                                        />
+                                        <div className="absolute top-2 right-2">
+                                            <Badge variant="secondary" className="bg-green-500/80 text-white">
+                                                <CheckCircle className="h-3 w-3 mr-1" />
+                                                Uploaded
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <Button variant="outline" onClick={() => setImage(null)} className="w-full">
-                                        <Camera className="h-4 w-4 mr-2" />
-                                        Take New Photo
-                                    </Button>
+
+                                    <div className="flex flex-wrap gap-3 justify-center">
+                                        <Button onClick={handleReset} variant="outline">
+                                            <RotateCcw className="h-4 w-4 mr-2" />
+                                            Capture New Photo
+                                        </Button>
+
+                                        <Button variant="outline" onClick={() => window.open(imageUrl, "_blank")}>
+                                            <ExternalLink className="h-4 w-4 mr-2" />
+                                            View Full Size
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
 
@@ -163,29 +224,26 @@ export default function CapturePage() {
                                     <p className="text-muted-foreground text-sm">Select Client</p>
                                     <Popover open={open} onOpenChange={setOpen}>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-[200px] justify-start">
-                                                {selectedStatus ? <>{selectedStatus.label}</> : <>+ Set client</>}
+                                            <Button variant="outline" className="w-[200px] justify-start bg-transparent">
+                                                {selectedCustomer ? <>{selectedCustomer.fullName}</> : <>+ Set client</>}
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="p-0" side="right" align="start">
+                                        <PopoverContent className="p-0" align="start">
                                             <Command>
-                                                <CommandInput placeholder="Change status..." />
+                                                <CommandInput placeholder="Search clients..." />
                                                 <CommandList>
-                                                    <CommandEmpty>No results found.</CommandEmpty>
+                                                    <CommandEmpty>No clients found.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {statuses.map((status) => (
+                                                        {customers.map((customer) => (
                                                             <CommandItem
-                                                                key={status.value}
-                                                                value={status.value}
+                                                                key={customer._id}
+                                                                value={customer._id}
                                                                 onSelect={(value) => {
-                                                                    setSelectedStatus(
-                                                                        statuses.find((priority) => priority.value === value) ||
-                                                                        null
-                                                                    )
+                                                                    setSelectedCustomer(customers.find((c) => c._id === value) || null)
                                                                     setOpen(false)
                                                                 }}
                                                             >
-                                                                {status.label}
+                                                                {customer.fullName}
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -193,7 +251,7 @@ export default function CapturePage() {
                                             </Command>
                                         </PopoverContent>
                                     </Popover>
-                                    <Button><PlusCircle className="w-4 h-4" /> Create Client</Button>
+                                    <CustomerForm />
                                 </div>
                             </div>
                         </CardContent>
@@ -248,7 +306,7 @@ export default function CapturePage() {
                                                 </Badge>
                                             </div>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={getCurrentLocation} className="w-full">
+                                        <Button variant="outline" size="sm" onClick={getCurrentLocation} className="w-full bg-transparent">
                                             Update Location
                                         </Button>
                                     </div>
@@ -272,7 +330,21 @@ export default function CapturePage() {
                                         onChange={(e) => setBuildingType(e.target.value)}
                                     />
                                 </div>
-                               
+                                <div className="space-y-2">
+                                    <Label htmlFor="building-category">Building Category</Label>
+                                    <Select onValueChange={(value) => setCategory(value)}>
+                                        <SelectTrigger id="building-category">
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-64 overflow-y-auto">
+                                            {buildingCategories.map((cat) => (
+                                                <SelectItem key={cat.value} value={cat.value}>
+                                                    {cat.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea
@@ -289,7 +361,7 @@ export default function CapturePage() {
                         {/* Save Button */}
                         <Button
                             onClick={handleSave}
-                            disabled={!image || !location || !buildingType.trim() || isSaving}
+                            disabled={!imageUrl || !location || !buildingType.trim() || isSaving}
                             className="w-full"
                             size="lg"
                         >

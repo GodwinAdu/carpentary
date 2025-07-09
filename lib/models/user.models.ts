@@ -33,10 +33,6 @@ const UserSchema = new Schema({
         type: String,
         required: true,
     },
-    userType: {
-        type: String,
-        default: "worker", // Default user type is 'worker'
-    },
     email: {
         type: String,
         required: true,
