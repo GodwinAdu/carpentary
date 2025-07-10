@@ -65,9 +65,9 @@ async function _searchBuilding(user: User, query: string) {
             clientId: doc.clientId,
             place_name: doc.buildingType || 'No description',
             center: [doc.coordinates.lng, doc.coordinates.lat],
-            status:doc.status,
-            createdAt:doc.createdAt,
-            updatedAt:doc.updatedAt,
+            status: doc.status,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
             place_type: ['place'],
             properties: {
                 buildingType: doc.buildingType,
@@ -86,3 +86,49 @@ async function _searchBuilding(user: User, query: string) {
 }
 
 export const searchBuilding = await withAuth(_searchBuilding)
+
+
+
+async function _fetchAllBuilding(user: User) {
+    try {
+        if (!user) throw new Error("User not authenticated")
+
+            const buildings = await Building.find({});
+
+            if(buildings.length === 0 ) return [];
+
+            return JSON.parse(JSON.stringify(buildings))
+
+    } catch (error) {
+        console.log("error while fetch all buildings", error);
+        throw error
+    }
+};
+
+export const fetchAllBuilding = await withAuth(_fetchAllBuilding)
+
+async function _deleteAttendance(user: User, id: string) {
+    try {
+        if (!user) throw new Error("User not authenticated")
+
+        await connectToDB()
+
+        const patient = await Attendance.findById(id)
+
+        await deleteDocument({
+            actionType: 'ATTENDANCE_DELETED',
+            documentId: patient._id,
+            collectionName: 'Attendance',
+            userId: `${user?._id}`,
+            trashMessage: `Attendance with (ID: ${id}) was moved to trash by ${user.fullName}.`,
+            historyMessage: `User ${user.fullName} deleted Attendance with (ID: ${id}) on ${new Date().toLocaleString()}.`
+        });
+
+        return { success: true, message: "Attendance deleted successfully" };
+    } catch (error) {
+        console.log("error while deleting Attendance", error)
+        throw error;
+    }
+}
+
+export const deleteAttendance = await withAuth(_deleteAttendance)
