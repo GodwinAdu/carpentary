@@ -158,7 +158,7 @@ export const currentUser = cache(async () => {
     const user = await getAuthenticatedUser();
 
     if (!user) {
-        throw new Error("User not authenticated");
+        return null;
     }
 
     return user;
