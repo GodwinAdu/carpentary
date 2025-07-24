@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { UserNav } from "../commons/user-nav"
 
 
-export function Header({ user }: { user: boolean }) {
+export function Header({ user }: { user: any }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
 
@@ -96,7 +96,7 @@ export function Header({ user }: { user: boolean }) {
                     {/* Auth Buttons - Hidden on mobile, shown on desktop */}
                     <div className="hidden md:flex">
                         {user ? (
-                            <UserNav />
+                            <UserNav user={user} />
                         ) : (
                             <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
                                 <LogIn className="h-4 w-4 mr-2" />
@@ -139,7 +139,7 @@ export function Header({ user }: { user: boolean }) {
                                 <div className="mt-6 space-y-3 px-4">
                                     <div className="text-sm font-medium text-slate-700 mb-2">Account Access</div>
                                     {user ? (
-                                        <UserNav />
+                                        <UserNav user={user} />
                                     ) : (
                                         <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
                                             <LogIn className="h-4 w-4 mr-2" />

@@ -13,10 +13,10 @@ import {
     DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { currentUser } from "@/lib/helpers/session"
 
-export async function UserNav() {
-    const user = await currentUser(); // Assume this function fetches the current user data
+
+export function UserNav({user}) {
+    
 
     return (
         <DropdownMenu>

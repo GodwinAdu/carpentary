@@ -2,12 +2,12 @@
 import { FloatingElements } from "@/components/root/floating-element";
 import { Header } from "@/components/root/header";
 import { Hero } from "@/components/root/hero";
-import { getCurrentUser } from "@/lib/helpers/session";
+import { currentUser} from "@/lib/helpers/session";
 
 
 
 export default async function HomePage() {
-  const user = await getCurrentUser();
+  const user = await currentUser();
   return (
     <div className="min-h-screen bg-background mx-auto relative overflow-hidden">
       <FloatingElements />
