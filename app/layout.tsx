@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SocketProvider } from "@/providers/socket-provider";
 import NextTopLoader from "nextjs-toploader";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,11 +42,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SocketProvider>
-          <NextTopLoader showSpinner={false} />
-          {children}
-          <Toaster richColors />
-        </SocketProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <SocketProvider>
+            <NextTopLoader showSpinner={false} />
+            {children}
+            <Toaster richColors />
+          </SocketProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
