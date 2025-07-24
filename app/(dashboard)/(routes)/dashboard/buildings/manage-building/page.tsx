@@ -17,7 +17,7 @@ const page = async () => {
         <>
             <div className="flex justify-between items-center">
                 <Heading title='Manage Building Tracking' />
-                <Link href="/dashboard/manage-building/create" className={cn(buttonVariants({ size: "sm" }))}>
+                <Link href="manage-building/create" className={cn(buttonVariants({ size: "sm" }))}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New
                 </Link>

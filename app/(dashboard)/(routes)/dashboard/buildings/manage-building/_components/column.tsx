@@ -1,8 +1,10 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { CellAction } from "./cell-action";
 import { Badge } from "@/components/ui/badge";
+import { CellAction } from "@/components/table/cell-action";
+import { Edit, Trash2 } from "lucide-react";
+import { deleteBuilding } from "@/lib/actions/building.actions";
 
 interface StatusBadgeProps {
   status: string;
@@ -21,9 +23,20 @@ const statusMap: Record<string, { label: string; className: string }> = {
   archived: { label: "Archived", className: "bg-gray-200 text-gray-800" },
 };
 
+const handleDelete = async (id: string): Promise<void> => {
+  try {
+    await deleteBuilding(id)
+    console.log("Item deleted successfully")
+  } catch (error) {
+    console.error("Delete error:", error)
+    throw error // Re-throw to let CellAction handle the error
+  }
+}
+
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const badge = statusMap[status];
-  console.log(status,"testing status")
+  console.log(status, "testing status")
 
   return (
     <Badge className={badge?.className ?? "bg-gray-100 text-gray-700"}>
@@ -42,6 +55,10 @@ export const columns: ColumnDef<any>[] = [
     header: "Category",
   },
   {
+    accessorKey: "clientName",
+    header: "Client Name",
+  },
+  {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
@@ -50,6 +67,25 @@ export const columns: ColumnDef<any>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <CellAction data={row.original} />
+    cell: ({ row }) =>
+      <CellAction
+        data={row.original}
+        onDelete={handleDelete}
+        actions={[
+          {
+            label: "Edit",
+            type: "edit",
+            href: `/dashboard/buildings/manage-building/${row.original._id}`,
+            icon: <Edit className="h-4 w-4" />,
+            // permissionKey: "editUser",
+          },
+          {
+            label: "Delete",
+            type: "delete",
+            icon: <Trash2 className="h-4 w-4" />,
+            // permissionKey: "deleteUser",
+          },
+        ]}
+      />
   },
 ];

@@ -1,5 +1,6 @@
 "use client"
-import { useState, useCallback } from "react"
+
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,22 +10,10 @@ import { Badge } from "@/components/ui/badge"
 import { Camera, MapPin, Save, CheckCircle, AlertCircle, Loader2, RotateCcw, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { createBuilding } from "@/lib/actions/building.actions"
-import CustomerForm from "./customer-form"
+import { createBuilding, updateBuilding } from "@/lib/actions/building.actions"
 import { AdvancedCameraCapture } from "./camera-capture"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-type Customer = {
-    _id: string
-    fullName: string
-}
-
-interface CapturePageProps {
-    customers: Customer[]
-}
-
+import { usePathname, useRouter } from "next/navigation"
 
 const buildingCategories = [
     { label: "Residential", value: "residential" },
@@ -37,7 +26,6 @@ const buildingCategories = [
     { label: "Duplex / Triplex", value: "duplex_triplex" },
     { label: "Villa", value: "villa" },
     { label: "Cottage", value: "cottage" },
-
     { label: "Commercial", value: "commercial" },
     { label: "Office Building", value: "office" },
     { label: "Retail Store / Shop", value: "retail" },
@@ -46,22 +34,18 @@ const buildingCategories = [
     { label: "Restaurant / Cafe", value: "restaurant" },
     { label: "Supermarket", value: "supermarket" },
     { label: "Warehouse (Commercial)", value: "commercial_warehouse" },
-
     { label: "Industrial", value: "industrial" },
     { label: "Factory", value: "factory" },
     { label: "Distribution Center", value: "distribution_center" },
     { label: "Workshop", value: "workshop" },
-
     { label: "Institutional / Public", value: "public" },
     { label: "School / University", value: "school" },
     { label: "Hospital / Clinic", value: "hospital" },
     { label: "Library", value: "library" },
     { label: "Police Station", value: "police" },
     { label: "Religious Building", value: "religious" },
-
     { label: "Mixed-Use", value: "mixed_use" },
     { label: "Residential & Commercial", value: "residential_commercial" },
-
     { label: "Other", value: "other" },
     { label: "Construction Site", value: "construction" },
     { label: "Parking Garage", value: "parking" },
@@ -69,16 +53,35 @@ const buildingCategories = [
     { label: "Cinema / Theater", value: "cinema" },
     { label: "Agricultural Barn / Shed", value: "barn" },
 ]
-export default function CapturePage({ customers }: CapturePageProps) {
+
+export default function CapturePage({ type, initialData }: { type: "create" | "update"; initialData?: any }) {
     const [imageUrl, setImageUrl] = useState<string | null>(null)
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
     const [locationError, setLocationError] = useState<string | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [buildingType, setBuildingType] = useState("")
     const [description, setDescription] = useState("")
-    const [open, setOpen] = useState(false)
+    const [clientName, setClientName] = useState("")
+    const [clientEmail, setClientEmail] = useState("")
+    const [clientPhone, setClientPhone] = useState("")
     const [category, setCategory] = useState("")
-    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+
+    const path = usePathname()
+    const router = useRouter()
+
+    // Initialize state with initialData when in "update" mode
+    useEffect(() => {
+        if (type === "update" && initialData) {
+            setImageUrl(initialData.image || null)
+            setLocation(initialData.location || null)
+            setBuildingType(initialData.buildingType || "")
+            setDescription(initialData.description || "")
+            setCategory(initialData.category || "")
+            setClientName(initialData.clientName || "")
+            setClientEmail(initialData.clientEmail || "")
+            setClientPhone(initialData.clientPhone || "")
+        }
+    }, [type, initialData]) // Depend on type and initialData to re-run when they change [^1]
 
     const handleCapture = (uploadedImageUrl: string) => {
         console.log("Image uploaded to:", uploadedImageUrl)
@@ -106,7 +109,6 @@ export default function CapturePage({ customers }: CapturePageProps) {
             setLocationError("Geolocation is not supported by this browser")
             return
         }
-
         setLocationError(null)
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -135,7 +137,6 @@ export default function CapturePage({ customers }: CapturePageProps) {
             })
             return
         }
-
         setIsSaving(true)
         try {
             const values = {
@@ -143,20 +144,32 @@ export default function CapturePage({ customers }: CapturePageProps) {
                 location,
                 buildingType,
                 description,
-                clientId: selectedCustomer?._id || "",
+                category,
+                clientName,
+                clientEmail,
+                clientPhone,
             }
-
-            await createBuilding(values)
-            toast.success("Building saved successfully!", {
-                description: "Your building data has been saved to the database",
-            })
-
-            // Reset form
-            setImageUrl(null)
-            setLocation(null)
-            setBuildingType("")
-            setDescription("")
-            setSelectedCustomer(null)
+            if (type === "create") {
+                await createBuilding(values, path)
+                toast.success("Building created successfully!", {
+                    description: "Your building data has been saved to the database",
+                })
+                // Reset form only for create operations
+                setImageUrl(null)
+                setLocation(null)
+                setBuildingType("")
+                setDescription("")
+                setClientName("")
+                setClientEmail("")
+                setClientPhone("")
+                setCategory("")
+            } else {
+                await updateBuilding(initialData._id, values)
+                toast.success("Building updated successfully!", {
+                    description: "Your building data has been updated in the database",
+                })
+            }
+            router.push("/dashboard/buildings/manage-building")
         } catch (error) {
             console.error("Error saving building:", error)
             toast.error("Save Error", {
@@ -204,13 +217,11 @@ export default function CapturePage({ customers }: CapturePageProps) {
                                             </Badge>
                                         </div>
                                     </div>
-
                                     <div className="flex flex-wrap gap-3 justify-center">
                                         <Button onClick={handleReset} variant="outline">
                                             <RotateCcw className="h-4 w-4 mr-2" />
                                             Capture New Photo
                                         </Button>
-
                                         <Button variant="outline" onClick={() => window.open(imageUrl, "_blank")}>
                                             <ExternalLink className="h-4 w-4 mr-2" />
                                             View Full Size
@@ -218,45 +229,37 @@ export default function CapturePage({ customers }: CapturePageProps) {
                                     </div>
                                 </div>
                             )}
-
                             <div className="space-y-2">
-                                <div className="flex items-center space-x-4">
-                                    <p className="text-muted-foreground text-sm">Select Client</p>
-                                    <Popover open={open} onOpenChange={setOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-[200px] justify-start bg-transparent">
-                                                {selectedCustomer ? <>{selectedCustomer.fullName}</> : <>+ Set client</>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="p-0" align="start">
-                                            <Command>
-                                                <CommandInput placeholder="Search clients..." />
-                                                <CommandList>
-                                                    <CommandEmpty>No clients found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {customers.map((customer) => (
-                                                            <CommandItem
-                                                                key={customer._id}
-                                                                value={customer._id}
-                                                                onSelect={(value) => {
-                                                                    setSelectedCustomer(customers.find((c) => c._id === value) || null)
-                                                                    setOpen(false)
-                                                                }}
-                                                            >
-                                                                {customer.fullName}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <CustomerForm />
+                                <div className="space-y-2">
+                                    <Label htmlFor="clientName">Client Full Name </Label>
+                                    <Input
+                                        id="clientName"
+                                        placeholder="Enter client full name"
+                                        value={clientName}
+                                        onChange={(e) => setClientName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="clientEmail">Client Email </Label>
+                                    <Input
+                                        id="clientEmail"
+                                        placeholder="Enter client email"
+                                        value={clientEmail}
+                                        onChange={(e) => setClientEmail(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="clientPhone">Client Phone </Label>
+                                    <Input
+                                        id="clientPhone"
+                                        placeholder="Enter client phone"
+                                        value={clientPhone}
+                                        onChange={(e) => setClientPhone(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-
                     {/* Location & Details Section */}
                     <div className="space-y-6">
                         {/* Location Card */}
@@ -313,7 +316,6 @@ export default function CapturePage({ customers }: CapturePageProps) {
                                 )}
                             </CardContent>
                         </Card>
-
                         {/* Building Details Card */}
                         <Card>
                             <CardHeader>
@@ -332,7 +334,7 @@ export default function CapturePage({ customers }: CapturePageProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="building-category">Building Category</Label>
-                                    <Select onValueChange={(value) => setCategory(value)}>
+                                    <Select onValueChange={(value) => setCategory(value)} value={category}>
                                         <SelectTrigger id="building-category">
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
@@ -357,7 +359,6 @@ export default function CapturePage({ customers }: CapturePageProps) {
                                 </div>
                             </CardContent>
                         </Card>
-
                         {/* Save Button */}
                         <Button
                             onClick={handleSave}

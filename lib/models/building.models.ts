@@ -7,15 +7,13 @@ const BuildingSchema = new Schema({
         lat: { type: Number, required: true },
         lng: { type: Number, required: true },
     },
-    address:{type:String},
-    category:{type:String},
+    address: { type: String },
+    category: { type: String },
     buildingType: { type: String, required: true },
     description: { type: String, required: true },
-    clientId: {
-        type: Schema.Types.ObjectId,
-        ref: "Customer",
-        required: true
-    },
+    clientName: { type: String, required: true },
+    clientEmail: { type: String },
+    clientPhone: { type: String },
     status: {
         type: String,
         enum: [

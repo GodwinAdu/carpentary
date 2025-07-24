@@ -98,11 +98,16 @@ export function NavMain({ role }: NavMainProps) {
       items: [
         {
           title: "Manage Buildings",
-          url: `/dashboard/manage-building`,
+          url: `/dashboard/buildings/manage-building`,
         },
         {
           title: "Building List",
-          url: `/dashboard/building-list`,
+          url: `/dashboard/buildings/building-list`,
+
+        },
+        {
+          title: "Schedule Activities",
+          url: `/dashboard/buildings/activities`,
 
         },
       ]
@@ -197,6 +202,11 @@ export function NavMain({ role }: NavMainProps) {
       icon: Combine,
       roleField: "hrManagement",
       items: [
+        {
+          title: "Departments",
+          url: `/dashboard/hr/departments`,
+          roleField: "manageHr"
+        },
         {
           title: "Staffs",
           url: `/dashboard/hr/staffs`,

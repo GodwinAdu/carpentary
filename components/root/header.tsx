@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Phone, Mail, Hammer } from "lucide-react"
+import { Menu, Phone, Mail, Hammer, LogIn, ChevronLast } from "lucide-react"
 import { AuthModal } from "./auth-modal"
+import { cn } from "@/lib/utils"
 
 
 export function Header() {
@@ -21,12 +22,12 @@ export function Header() {
     }, [])
 
     const navItems = [
-        { href: "#home", label: "Home" },
-        { href: "#about", label: "About" },
-        { href: "#services", label: "Services" },
-        { href: "#materials", label: "Materials" },
-        { href: "#projects", label: "Projects" },
-        { href: "#contact", label: "Contact" },
+        // { href: "#home", label: "Home" },
+        // { href: "#about", label: "About" },
+        // { href: "#services", label: "Services" },
+        // { href: "#materials", label: "Materials" },
+        // { href: "#projects", label: "Projects" },
+        // { href: "#contact", label: "Contact" },
     ]
 
     const handleNavClick = (href: string) => {
@@ -94,7 +95,11 @@ export function Header() {
                 <div className="flex items-center gap-4">
                     {/* Auth Buttons - Hidden on mobile, shown on desktop */}
                     <div className="hidden md:flex">
-                        <AuthModal />
+                        <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
+                            <LogIn className="h-4 w-4 mr-2" />
+                            Sign In
+                            <ChevronLast className="h-4 w-4 ml-2" />
+                        </Link>
                     </div>
 
                     {/* Get Free Quote Button - Hidden on small screens */}
@@ -129,7 +134,11 @@ export function Header() {
                                 {/* Mobile Auth Buttons */}
                                 <div className="mt-6 space-y-3 px-4">
                                     <div className="text-sm font-medium text-slate-700 mb-2">Account Access</div>
-                                    <AuthModal />
+                                    <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
+                                        <LogIn className="h-4 w-4 mr-2" />
+                                        Sign In
+                                        <ChevronLast className="h-4 w-4 ml-2" />
+                                    </Link>
                                 </div>
 
                                 <Button className="mt-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">

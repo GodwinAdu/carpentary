@@ -54,15 +54,9 @@ const UserSchema = new Schema({
         type: String,
         required: true,
     },
-    gender: {
-        type: String,
-        enum: ["male", "female", "other", "prefer-not-to-say"],
-        default: "prefer-not-to-say",
-    },
-    bio: { type: String, trim: true },
     role: {
         type: String,
-        default: "new", // Default role is 'new'
+        required: true,
     },
     avatarUrl: {
         type: String, // Optional profile image URL
@@ -77,15 +71,7 @@ const UserSchema = new Schema({
         default: false,
     },
     address: { type: AddressSchema },
-    emailVerified: {
-        type: Boolean,
-        default: false,
-    },
-    phoneVerified: {
-        type: Boolean,
-        default: false,
-    },
-    twoFactorEnabled: {
+    isVerified: {
         type: Boolean,
         default: false,
     },
@@ -96,7 +82,7 @@ const UserSchema = new Schema({
     departmentId: {
         type: Schema.Types.ObjectId,
         ref: "Department",
-        default: null,
+        required: true,
     },
     workSchedule: { type: [WorkScheduleSchema], default: [] }, // Array of schedule entries
     workLocation: {
@@ -104,6 +90,11 @@ const UserSchema = new Schema({
         enum: ["on-site", "remote", "hybrid"],
         default: "on-site",
     },
+    warehouse: [{
+        type: Schema.Types.ObjectId,
+        ref: "Warehouse",
+        default: null,
+    }],
     cardDetails: {
         idCardType: {
             type: String,
@@ -133,6 +124,12 @@ const UserSchema = new Schema({
         type: Date,
         default: null,
     },
+    gender: {
+        type: String,
+        enum: ["male", "female", "other", "prefer-not-to-say"],
+        default: "prefer-not-to-say",
+    },
+    bio: { type: String, trim: true },
     requirePasswordChange: { type: Boolean, default: true },
     isBanned: { type: Boolean, default: false },
     onLeave: { type: Boolean, default: false },
@@ -145,6 +142,14 @@ const UserSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "User",
         default: null,
+    },
+    del_flag: {
+        type: Boolean,
+        default: false,
+    },
+    mod_flag: {
+        type: Boolean,
+        default: false,
     },
     action_type: {
         type: String,

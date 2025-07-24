@@ -30,11 +30,15 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
+        liveTracking: {
+            type: Boolean,
+            default: false,
+        },
         hrManagement: {
             type: Boolean,
             default: false,
         },
-        paymentAccount: {
+        account: {
             type: Boolean,
             default: false,
         },

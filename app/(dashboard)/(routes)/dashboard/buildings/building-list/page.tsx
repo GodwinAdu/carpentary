@@ -1,38 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Building2, MapPin, Calendar, Plus, Edit2Icon } from "lucide-react"
+import { ArrowLeft, Building2, MapPin, Calendar, Edit2Icon } from "lucide-react"
 import Link from "next/link"
+import { fetchAllBuilding } from "@/lib/actions/building.actions"
+import build from "next/dist/build"
 
-// Mock building data
-const mockBuildings = [
-  {
-    id: 1,
-    name: "Modern Office Complex",
-    address: "123 Business Ave",
-    capturedAt: "2024-01-15",
-    category: "Commercial",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Historic Library",
-    address: "456 Culture St",
-    capturedAt: "2024-01-14",
-    category: "Public",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Residential Tower",
-    address: "789 Living Blvd",
-    capturedAt: "2024-01-13",
-    category: "Residential",
-    status: "Active",
-  },
-]
+export default async function BuildingsPage() {
 
-export default function BuildingsPage() {
+  const buildings = await fetchAllBuilding()
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
@@ -49,12 +25,7 @@ export default function BuildingsPage() {
               <p className="text-gray-600 dark:text-gray-400">Manage and organize your building records</p>
             </div>
           </div>
-          <Button asChild>
-            <Link href="/capture">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Building
-            </Link>
-          </Button>
+
         </div>
 
         {/* Stats Cards */}
@@ -64,7 +35,7 @@ export default function BuildingsPage() {
               <div className="flex items-center">
                 <Building2 className="h-8 w-8 text-blue-600 mr-4" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockBuildings.length}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{buildings.length}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Buildings</p>
                 </div>
               </div>
@@ -78,7 +49,7 @@ export default function BuildingsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {mockBuildings.filter((b) => b.category === "Commercial").length}
+                    {buildings.filter((b) => b.category === "Commercial").length}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Commercial</p>
                 </div>
@@ -93,7 +64,7 @@ export default function BuildingsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {mockBuildings.filter((b) => b.category === "Residential").length}
+                    {buildings.filter((b) => b.category === "Residential").length}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Residential</p>
                 </div>
@@ -108,7 +79,7 @@ export default function BuildingsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {mockBuildings.filter((b) => b.category === "Public").length}
+                    {buildings.filter((b) => b.category === "Public").length}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Public</p>
                 </div>
@@ -125,7 +96,7 @@ export default function BuildingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockBuildings.map((building) => (
+              {buildings.map((building) => (
                 <div
                   key={building.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -155,13 +126,13 @@ export default function BuildingsPage() {
                     </Badge>
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/dashboard/building-list/${building.id}`}>View</Link>
+                        <Link href={`/dashboard/buildings/building-list/${building.id}`}>View</Link>
                       </Button>
-                      <Button size="sm" variant="outline" asChild>
+                      {/* <Button size="sm" variant="outline" asChild>
                         <Link href={`/map?building=${building.id}`}>
                           <Edit2Icon className="h-4 w-4" />
                         </Link>
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                 </div>

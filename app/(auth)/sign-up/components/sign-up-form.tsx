@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation"
 import { createUser } from "@/lib/actions/user.actions"
 import { LoadingSpinner } from "@/components/root/loading-spinner"
 import Link from "next/link"
-import { getDefaultClassNames } from 'react-day-picker';
+
 
 
 const clientSignUpSchema = z
