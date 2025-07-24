@@ -5,6 +5,7 @@ import { ArrowLeft, Building2, MapPin, Calendar, Edit2Icon } from "lucide-react"
 import Link from "next/link"
 import { fetchAllBuilding } from "@/lib/actions/building.actions"
 import build from "next/dist/build"
+import { format } from "date-fns"
 
 export default async function BuildingsPage() {
 
@@ -106,15 +107,15 @@ export default async function BuildingsPage() {
                       <Building2 className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{building.name}</h3>
+                      <h3 className="font-semibold text-lg">{building.buildingType}</h3>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 space-x-4">
                         <div className="flex items-center">
                           <MapPin className="h-4 w-4 mr-1" />
-                          {building.address}
+                          {building.address || "No address provided"}
                         </div>
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {building.capturedAt}
+                          {format(building.createdAt, 'PPP')}
                         </div>
                       </div>
                     </div>

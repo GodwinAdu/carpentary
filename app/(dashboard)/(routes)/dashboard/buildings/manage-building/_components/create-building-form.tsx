@@ -65,6 +65,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
     const [clientEmail, setClientEmail] = useState("")
     const [clientPhone, setClientPhone] = useState("")
     const [category, setCategory] = useState("")
+    const [address, setAddress] = useState("")
 
     const path = usePathname()
     const router = useRouter()
@@ -80,6 +81,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
             setClientName(initialData.clientName || "")
             setClientEmail(initialData.clientEmail || "")
             setClientPhone(initialData.clientPhone || "")
+            setAddress(initialData.address || "")
         }
     }, [type, initialData]) // Depend on type and initialData to re-run when they change [^1]
 
@@ -148,6 +150,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
                 clientName,
                 clientEmail,
                 clientPhone,
+                address,
             }
             if (type === "create") {
                 await createBuilding(values, path)
@@ -255,6 +258,15 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
                                         placeholder="Enter client phone"
                                         value={clientPhone}
                                         onChange={(e) => setClientPhone(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="address">Address </Label>
+                                    <Input
+                                        id="address"
+                                        placeholder="Enter address"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
                                     />
                                 </div>
                             </div>

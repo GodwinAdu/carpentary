@@ -16,6 +16,7 @@ interface CreateBuildingProps {
     clientName: string;
     clientEmail: string;
     clientPhone: string;
+    address:string;
 }
 
 async function _createBuilding(
@@ -26,7 +27,7 @@ async function _createBuilding(
     try {
         if (!user) throw new Error("User not authenticated");
 
-        const { image, location, buildingType, description, category, clientName, clientEmail, clientPhone } = values;
+        const { image, location, buildingType, description, category, clientName, clientEmail, clientPhone, address } = values;
 
         await connectToDB();
 
@@ -39,6 +40,7 @@ async function _createBuilding(
             clientName,
             clientEmail,
             clientPhone,
+            address,
             status: "pending", // Default status
             createdBy: user._id,
         });

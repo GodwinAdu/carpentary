@@ -5,11 +5,11 @@ import Link from "next/link"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Phone, Mail, Hammer, LogIn, ChevronLast } from "lucide-react"
-import { AuthModal } from "./auth-modal"
 import { cn } from "@/lib/utils"
+import { UserNav } from "../commons/user-nav"
 
 
-export function Header() {
+export function Header({ user }: { user: boolean }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isScrolled, setIsScrolled] = useState(false)
 
@@ -95,11 +95,15 @@ export function Header() {
                 <div className="flex items-center gap-4">
                     {/* Auth Buttons - Hidden on mobile, shown on desktop */}
                     <div className="hidden md:flex">
-                        <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
-                            <LogIn className="h-4 w-4 mr-2" />
-                            Sign In
-                            <ChevronLast className="h-4 w-4 ml-2" />
-                        </Link>
+                        {user ? (
+                            <UserNav />
+                        ) : (
+                            <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
+                                <LogIn className="h-4 w-4 mr-2" />
+                                Sign In
+                                <ChevronLast className="h-4 w-4 ml-2" />
+                            </Link>
+                        )}
                     </div>
 
                     {/* Get Free Quote Button - Hidden on small screens */}
@@ -134,11 +138,15 @@ export function Header() {
                                 {/* Mobile Auth Buttons */}
                                 <div className="mt-6 space-y-3 px-4">
                                     <div className="text-sm font-medium text-slate-700 mb-2">Account Access</div>
-                                    <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
-                                        <LogIn className="h-4 w-4 mr-2" />
-                                        Sign In
-                                        <ChevronLast className="h-4 w-4 ml-2" />
-                                    </Link>
+                                    {user ? (
+                                        <UserNav />
+                                    ) : (
+                                        <Link href="/sign-in" className={cn(buttonVariants(), "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105")}>
+                                            <LogIn className="h-4 w-4 mr-2" />
+                                            Sign In
+                                            <ChevronLast className="h-4 w-4 ml-2" />
+                                        </Link>
+                                    )}
                                 </div>
 
                                 <Button className="mt-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -149,6 +157,6 @@ export function Header() {
                     </Sheet>
                 </div>
             </div>
-        </header>
+        </header >
     )
 }
