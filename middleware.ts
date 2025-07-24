@@ -65,6 +65,7 @@ export async function middleware(request: NextRequest) {
     // Get the access token from cookies
     const accessToken = request.cookies.get('token')?.value;
 
+
     // If no access token, check for refresh token
     if (!accessToken) {
         const refreshToken = request.cookies.get('refreshToken')?.value;
@@ -107,6 +108,13 @@ export async function middleware(request: NextRequest) {
 
     // Verify access token
     const payload = await verifyToken(accessToken, accessTokenEncoder);
+
+    // If user is authenticated and tries to access home page, redirect to dashboard
+    if (payload && pathname === '/') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+    }
 
     // If access token is invalid or expired, try refresh token
     if (
