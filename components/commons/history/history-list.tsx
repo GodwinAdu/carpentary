@@ -1,356 +1,648 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Loader2, Search, Trash2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { format, formatDistanceToNow, isSameDay } from "date-fns";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useRouter } from "next/navigation";
-import { deleteHistory, fetchAllHistories } from "@/lib/actions/history.actions";
-import { toast } from "sonner";
-
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Search, Filter, ChevronDown, X, Eye, Calendar, User, FileText, Clock, Trash2 } from "lucide-react"
+import { deleteHistory, fetchAllHistories } from "@/lib/actions/history.actions"
 
 interface HistoryItem {
-    _id: string;
-    storeId: string;
-    actionType: string;
+    _id: string
+    storeId: string
+    actionType: string
     details: {
-        itemId: string;
-        deletedAt?: string;
-    };
+        itemId: string
+        deletedAt?: string
+    }
     performedBy: {
-        fullName: string;
-    };
-    entityId: string;
-    message: string;
-    entityType: string;
-    timestamp: string;
-    createdAt: string;
-    updatedAt: string;
+        fullName: string
+    }
+    entityId: string
+    message: string
+    entityType: string
+    timestamp: string
+    createdAt: string
+    updatedAt: string
 }
-const actionTypes = ["CREATED", "UPDATED", "DELETED"]; // Add more as needed
 
+// Added mock data and functions directly in component to resolve import issues
+// const mockHistories: HistoryItem[] = [
+//   {
+//     _id: "1",
+//     storeId: "store1",
+//     actionType: "CREATED",
+//     details: { itemId: "item1" },
+//     performedBy: { fullName: "John Doe" },
+//     entityId: "entity1",
+//     message: "Created new product 'Wireless Headphones' with SKU WH-001 in Electronics category",
+//     entityType: "Product",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+//   },
+//   {
+//     _id: "2",
+//     storeId: "store1",
+//     actionType: "UPDATED",
+//     details: { itemId: "item2" },
+//     performedBy: { fullName: "Jane Smith" },
+//     entityId: "entity2",
+//     message: "Updated inventory quantity for 'Gaming Mouse' from 50 to 75 units",
+//     entityType: "Inventory",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+//   },
+//   {
+//     _id: "3",
+//     storeId: "store1",
+//     actionType: "DELETED",
+//     details: { itemId: "item3", deletedAt: new Date().toISOString() },
+//     performedBy: { fullName: "Mike Johnson" },
+//     entityId: "entity3",
+//     message: "Deleted discontinued product 'Old Smartphone Model XYZ' from catalog",
+//     entityType: "Product",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+//   },
+//   {
+//     _id: "4",
+//     storeId: "store1",
+//     actionType: "RESTORED",
+//     details: { itemId: "item4" },
+//     performedBy: { fullName: "Sarah Wilson" },
+//     entityId: "entity4",
+//     message: "Restored accidentally deleted customer order #12345 for premium subscription",
+//     entityType: "Order",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+//   },
+//   {
+//     _id: "5",
+//     storeId: "store1",
+//     actionType: "CREATED",
+//     details: { itemId: "item5" },
+//     performedBy: { fullName: "Alex Brown" },
+//     entityId: "entity5",
+//     message: "Created new customer account for 'Premium Electronics Store' with business tier access",
+//     entityType: "Customer",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+//   },
+//   {
+//     _id: "6",
+//     storeId: "store1",
+//     actionType: "UPDATED",
+//     details: { itemId: "item6" },
+//     performedBy: { fullName: "Emma Davis" },
+//     entityId: "entity6",
+//     message: "Updated shipping policy to include free delivery for orders over $100",
+//     entityType: "Policy",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+//   },
+//   {
+//     _id: "7",
+//     storeId: "store1",
+//     actionType: "DELETED",
+//     details: { itemId: "item7", deletedAt: new Date().toISOString() },
+//     performedBy: { fullName: "Chris Lee" },
+//     entityId: "entity7",
+//     message: "Deleted expired promotional campaign 'Summer Sale 2024' and associated discount codes",
+//     entityType: "Campaign",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
+//   },
+//   {
+//     _id: "8",
+//     storeId: "store1",
+//     actionType: "CREATED",
+//     details: { itemId: "item8" },
+//     performedBy: { fullName: "Lisa Garcia" },
+//     entityId: "entity8",
+//     message: "Created new category 'Smart Home Devices' with automated product tagging rules",
+//     entityType: "Category",
+//     timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+//     createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+//     updatedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+//   },
+// ]
+
+// // Mock functions embedded directly in component
+// const fetchAllHistories = async (lastId: string | null = null, limit = 10): Promise<HistoryItem[]> => {
+//   await new Promise((resolve) => setTimeout(resolve, 500))
+
+//   let startIndex = 0
+//   if (lastId) {
+//     const lastIndex = mockHistories.findIndex((h) => h._id === lastId)
+//     startIndex = lastIndex + 1
+//   }
+
+//   return mockHistories.slice(startIndex, startIndex + limit)
+// }
+
+// const deleteHistory = async (id: string): Promise<void> => {
+//   await new Promise((resolve) => setTimeout(resolve, 300))
+
+//   const index = mockHistories.findIndex((h) => h._id === id)
+//   if (index > -1) {
+//     mockHistories.splice(index, 1)
+//   }
+// }
+
+const actionTypes = ["CREATED", "UPDATED", "DELETED", "RESTORED"]
 
 const getActionTypeColor = (actionType: string) => {
     if (actionType.includes("DELETED"))
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
     if (actionType.includes("CREATED"))
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
     if (actionType.includes("UPDATED"))
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
     if (actionType.includes("RESTORED"))
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-};
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
+    return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+}
+
+const getActionIcon = (actionType: string) => {
+    if (actionType.includes("DELETED")) return "🗑️"
+    if (actionType.includes("CREATED")) return "✨"
+    if (actionType.includes("UPDATED")) return "📝"
+    if (actionType.includes("RESTORED")) return "🔄"
+    return "📋"
+}
+
+// Utility function to truncate messages with hover tooltip
+const truncateMessage = (message: string, maxLength = 60) => {
+    if (message.length <= maxLength) return message
+    return message.substring(0, maxLength) + "..."
+}
 
 export function HistoryList() {
-    const [histories, setHistories] = useState<HistoryItem[]>([]);
-    const [lastId, setLastId] = useState(null); // Store the last fetched _id
-    const [filter, setFilter] = useState("");
-    const [actionTypeFilter, setActionTypeFilter] = useState<string | null>(null);
-    const [dateFilter, setDateFilter] = useState<Date | null>(null);
-    const [sortBy, setSortBy] = useState<keyof HistoryItem>("timestamp");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-    const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
-    const observer = useRef<IntersectionObserver | null>(null);
-
-    const router = useRouter()
-
-    const fetchHistories = async () => {
-        if (loading || !hasMore) return;
-
-        setLoading(true);
-
-        try {
-            const limit = 10; // Fetch 10 items at a time
-            const data = await fetchAllHistories(lastId, limit);
-
-            if (data.length === 0) {
-                setHasMore(false);
-                return;
-            }
-
-            // Remove duplicates
-            const newHistories = data.filter(
-                (history: HistoryItem) => !histories.some((h) => h._id === history._id)
-            );
-
-            if (newHistories.length > 0) {
-                setHistories((prev) => [...prev, ...newHistories]);
-                setLastId(newHistories[newHistories.length - 1]._id);
-            } else {
-                setHasMore(false);
-            }
-        } catch {
-            toast.error("Error!", {
-                description: "Failed to fetch histories. Please try again later.",
-            })
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [histories, setHistories] = useState<HistoryItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [hasMore, setHasMore] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [selectedActionType, setSelectedActionType] = useState<string>("all")
+    const [selectedEntityType, setSelectedEntityType] = useState<string>("all")
+    const [filtersOpen, setFiltersOpen] = useState(false)
+    const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
+    // const [selectedHistory, setSelectedHistory] = useState<HistoryItem | null>(null)
+    const observerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        fetchHistories();
-    }, []);
+        loadHistories(true)
+    }, [])
 
-    const handleScroll = () => {
-        if (
-            window.innerHeight + document.documentElement.scrollTop >=
-            document.documentElement.offsetHeight - 100 &&
-            hasMore &&
-            !loading
-        ) {
-            fetchHistories();
-        }
-    };
-
-    useEffect(() => {
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [hasMore, loading]);
-
-    const lastHistoryRef = (node: HTMLTableRowElement) => {
-        if (loading) return;
-
-        if (observer.current) observer.current.disconnect();
-
-        observer.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasMore) {
-                fetchHistories();
-            }
-        });
-
-        if (node) observer.current.observe(node);
-    };
-
-    const applyFiltersAndSort = () => {
-        let filtered = [...histories]; // Create a shallow copy of histories
-
-        if (filter) {
-            filtered = filtered.filter((history) =>
-                history.message.toLowerCase().includes(filter.toLowerCase())
-            );
-        }
-
-        if (actionTypeFilter) {
-            filtered = filtered.filter((history) =>
-                history.actionType.includes(actionTypeFilter)
-            );
-        }
-
-        if (dateFilter) {
-            filtered = filtered.filter((history) =>
-                isSameDay(new Date(history.timestamp), new Date(dateFilter))
-            );
-        }
-
-        // Remove duplicates based on _id
-        filtered = filtered.filter((history, index, self) =>
-            index === self.findIndex((t) => t._id === history._id)
-        );
-
-        filtered.sort((a, b) => {
-            const aValue = a[sortBy];
-            const bValue = b[sortBy];
-
-            if (sortOrder === "asc") {
-                return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    const loadHistories = useCallback(
+        async (reset = false) => {
+            if (reset) {
+                setLoading(true)
+                setHistories([])
             } else {
-                return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                setLoadingMore(true)
             }
-        });
 
-        return filtered;
-    };
+            try {
+                const lastId = reset ? null : histories[histories.length - 1]?._id
+                const newHistories = await fetchAllHistories(lastId, 10)
 
-    const filteredAndSortedHistories = applyFiltersAndSort();
+                if (reset) {
+                    setHistories(newHistories)
+                } else {
+                    setHistories((prev) => [...prev, ...newHistories])
+                }
 
-
-    console.log(filteredAndSortedHistories, "filteredHistories")
+                setHasMore(newHistories.length === 10)
+            } catch (error) {
+                console.error("Failed to load histories:", error)
+            } finally {
+                setLoading(false)
+                setLoadingMore(false)
+            }
+        },
+        [histories],
+    )
 
     const handleDelete = async (id: string) => {
+        setDeletingIds((prev) => new Set([...prev, id]))
         try {
-            setIsLoading(true);
-            await deleteHistory(id);
-            router.refresh();
-            toast.success("Deleted history",{
-                description: "You've deleted history successfully.",
-            });
-
-
-        } catch {
-
-            toast.error("Error deleting history",{
-                description: "Failed to delete history. Please try again later.",
-            });
+            await deleteHistory(id)
+            setHistories((prev) => prev.filter((h) => h._id !== id))
+        } catch (error) {
+            console.error("Failed to delete history:", error)
         } finally {
-            setIsLoading(false);
+            setDeletingIds((prev) => {
+                const newSet = new Set(prev)
+                newSet.delete(id)
+                return newSet
+            })
         }
-
     }
 
+    const filteredHistories = histories.filter((history) => {
+        const matchesSearch =
+            history.actionType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            history.entityType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            history.performedBy.fullName.toLowerCase().includes(searchTerm.toLowerCase())
 
-    return (
-        <div className="space-y-4 ">
-            {loading && page === 1 && (
-                <div className="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+        const matchesActionType = selectedActionType === "all" || history.actionType === selectedActionType
+        const matchesEntityType = selectedEntityType === "all" || history.entityType === selectedEntityType
+
+        return matchesSearch && matchesActionType && matchesEntityType
+    })
+
+    const activeFiltersCount = [selectedActionType !== "all", selectedEntityType !== "all", searchTerm.length > 0].filter(
+        Boolean,
+    ).length
+
+    const clearAllFilters = () => {
+        setSearchTerm("")
+        setSelectedActionType("all")
+        setSelectedEntityType("all")
+    }
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+    }
+
+    const formatRelativeTime = (dateString: string) => {
+        const now = new Date()
+        const date = new Date(dateString)
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+        if (diffInMinutes < 1) return "Just now"
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`
+        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
+        return `${Math.floor(diffInMinutes / 1440)}d ago`
+    }
+
+    const HistoryDetailDialog = ({ history }: { history: HistoryItem }) => (
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <span className="text-2xl">{getActionIcon(history.actionType)}</span>
+                    Action Details
+                </DialogTitle>
+                <DialogDescription>Complete information about this history entry</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+                {/* Action Summary */}
+                <div className="flex items-center gap-3">
+                    <Badge className={`${getActionTypeColor(history.actionType)} font-medium`}>{history.actionType}</Badge>
+                    <Badge variant="outline" className="font-medium">
+                        {history.entityType}
+                    </Badge>
                 </div>
-            )}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search history..."
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="pl-8"
-                    />
+
+                {/* Full Message */}
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <FileText className="h-4 w-4" />
+                        Description
+                    </div>
+                    <p className="text-sm leading-relaxed bg-muted/50 p-3 rounded-lg">{history.message}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <Select
-                        value={actionTypeFilter || "all"}
-                        onValueChange={(value) =>
-                            setActionTypeFilter(value === "all" ? null : value)
-                        }
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Filter by action type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Actions</SelectItem>
-                            {actionTypes.map((actionType) => (
-                                <SelectItem key={actionType} value={actionType}>
-                                    {actionType}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select
-                        value={sortBy}
-                        onValueChange={(value) => setSortBy(value as keyof HistoryItem)}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="timestamp">Date</SelectItem>
-                            <SelectItem value="actionType">Action Type</SelectItem>
-                            <SelectItem value="storeId">Store ID</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Select
-                        value={sortOrder}
-                        onValueChange={(value) => setSortOrder(value as "asc" | "desc")}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Sort order" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="asc">Ascending</SelectItem>
-                            <SelectItem value="desc">Descending</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="w-[280px] justify-start text-left font-normal"
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateFilter ? format(dateFilter, "PPP") : <span>Pick a date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={dateFilter as Date}
-                                onSelect={(date) => setDateFilter(date as Date)}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
+
+                {/* User Information */}
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <User className="h-4 w-4" />
+                        Performed By
+                    </div>
+                    <p className="text-sm font-medium">{history.performedBy.fullName}</p>
+                </div>
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            Timestamp
+                        </div>
+                        <div className="text-sm">
+                            <p className="font-medium">{formatDate(history.timestamp)}</p>
+                            <p className="text-muted-foreground">{formatRelativeTime(history.timestamp)}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            Created
+                        </div>
+                        <div className="text-sm">
+                            <p className="font-medium">{formatDate(history.createdAt)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Technical Details */}
+                <div className="space-y-4 border-t pt-4">
+                    <h4 className="font-medium text-sm text-muted-foreground">Technical Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span className="font-medium">Entity ID:</span>
+                            <p className="text-muted-foreground font-mono">{history.entityId}</p>
+                        </div>
+                        <div>
+                            <span className="font-medium">Store ID:</span>
+                            <p className="text-muted-foreground font-mono">{history.storeId}</p>
+                        </div>
+                        <div>
+                            <span className="font-medium">Item ID:</span>
+                            <p className="text-muted-foreground font-mono">{history.details.itemId}</p>
+                        </div>
+                        {history.details.deletedAt && (
+                            <div>
+                                <span className="font-medium">Deleted At:</span>
+                                <p className="text-muted-foreground">{formatDate(history.details.deletedAt)}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Action Type</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead>Entity Type</TableHead>
-                        <TableHead>Performed By</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredAndSortedHistories.map((history, index) => (
-                        <TableRow
-                            key={index}
-                            ref={index === histories.length - 1 ? lastHistoryRef : null}
-                        >
-                            <TableCell>
-                                <Badge
-                                    variant="outline"
-                                    className={`font-semibold ${getActionTypeColor(
-                                        history.actionType
-                                    )}`}
-                                >
-                                    {history.actionType}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>{history.message}</TableCell>
-                            <TableCell>{history.entityType}</TableCell>
-                            <TableCell>{history.performedBy?.fullName}</TableCell>
-                            <TableCell>{formatDistanceToNow(new Date(history.timestamp), { addSuffix: true })}</TableCell>
-                            <TableCell className="text-right">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                            <span className="sr-only">Delete history item</span>
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure you want to delete this history item?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the history item.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDelete(history._id)}>{isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : "Delete"}</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-            {loading && page > 1 && (
-                <div className="text-center py-4">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+        </DialogContent>
+    )
+
+    if (loading) {
+        return (
+            <div className="w-full space-y-6">
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full max-w-sm" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-32" />
+                    </div>
                 </div>
+                <div className="space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="w-full space-y-6">
+            {/* Search and Filters */}
+            <div className="space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                        placeholder="Search by action, entity, or user..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+
+                <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                    <div className="flex items-center justify-between">
+                        <CollapsibleTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                                <Filter className="h-4 w-4" />
+                                Filters
+                                {activeFiltersCount > 0 && (
+                                    <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 text-xs">
+                                        {activeFiltersCount}
+                                    </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4" />
+                            </Button>
+                        </CollapsibleTrigger>
+
+                        {activeFiltersCount > 0 && (
+                            <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-2">
+                                <X className="h-4 w-4" />
+                                Clear all
+                            </Button>
+                        )}
+                    </div>
+
+                    <CollapsibleContent className="space-y-4 pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Action Type</label>
+                                <Select value={selectedActionType} onValueChange={setSelectedActionType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All actions" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All actions</SelectItem>
+                                        {actionTypes.map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {type}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Entity Type</label>
+                                <Select value={selectedEntityType} onValueChange={setSelectedEntityType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All entities" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All entities</SelectItem>
+                                        {Array.from(new Set(histories.map((h) => h.entityType))).map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {type}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CollapsibleContent>
+                </Collapsible>
+            </div>
+
+            {/* Results */}
+            {filteredHistories.length === 0 ? (
+                <Card className="p-12 text-center">
+                    <CardContent className="space-y-4">
+                        <div className="text-4xl">📋</div>
+                        <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">No history found</h3>
+                            <p className="text-muted-foreground">
+                                {activeFiltersCount > 0
+                                    ? "Try adjusting your filters to see more results."
+                                    : "No history entries have been recorded yet."}
+                            </p>
+                        </div>
+                        {activeFiltersCount > 0 && (
+                            <Button variant="outline" onClick={clearAllFilters}>
+                                Clear filters
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
+            ) : (
+                <>
+                    {/* Desktop Table */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-muted/50 border-b">
+                                    <tr>
+                                        <th className="text-left p-4 font-medium">Action</th>
+                                        <th className="text-left p-4 font-medium">Entity</th>
+                                        <th className="text-left p-4 font-medium">Time</th>
+                                        <th className="text-left p-4 font-medium">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredHistories.map((history) => (
+                                        <tr key={history._id} className="border-b hover:bg-muted/25 transition-colors">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg">{getActionIcon(history.actionType)}</span>
+                                                    <Badge className={`${getActionTypeColor(history.actionType)} font-medium`}>
+                                                        {history.actionType}
+                                                    </Badge>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="space-y-1">
+                                                    <Badge variant="outline" className="font-medium">
+                                                        {history.entityType}
+                                                    </Badge>
+                                                    <p className="text-sm text-muted-foreground font-mono">{history.entityId}</p>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium">{formatRelativeTime(history.timestamp)}</p>
+                                                    <p className="text-xs text-muted-foreground">{formatDate(history.timestamp)}</p>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                                                                <Eye className="h-4 w-4" />
+                                                                Details
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <HistoryDetailDialog history={history} />
+                                                    </Dialog>
+
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(history._id)}
+                                                        disabled={deletingIds.has(history._id)}
+                                                        className="gap-2 text-destructive hover:text-destructive"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        {deletingIds.has(history._id) ? "..." : "Delete"}
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden space-y-4">
+                        {filteredHistories.map((history) => (
+                            <Card key={history._id} className="overflow-hidden">
+                                <CardContent className="p-4 space-y-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <span className="text-lg">{getActionIcon(history.actionType)}</span>
+                                            <div className="space-y-2">
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Badge className={`${getActionTypeColor(history.actionType)} font-medium`}>
+                                                        {history.actionType}
+                                                    </Badge>
+                                                    <Badge variant="outline" className="font-medium">
+                                                        {history.entityType}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">{formatRelativeTime(history.timestamp)}</p>
+                                        <p className="text-xs text-muted-foreground">{formatDate(history.timestamp)}</p>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2 border-t">
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" size="sm" className="gap-2 flex-1 bg-transparent">
+                                                    <Eye className="h-4 w-4" />
+                                                    Details
+                                                </Button>
+                                            </DialogTrigger>
+                                            <HistoryDetailDialog history={history} />
+                                        </Dialog>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDelete(history._id)}
+                                            disabled={deletingIds.has(history._id)}
+                                            className="gap-2 text-destructive hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            {deletingIds.has(history._id) ? "..." : "Delete"}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </>
             )}
-            {!hasMore && !loading && (
-                <div className="text-center py-4 text-muted-foreground">
-                    No more histories to load.
+
+            {/* Load More */}
+            {hasMore && filteredHistories.length > 0 && (
+                <div ref={observerRef} className="flex justify-center py-4">
+                    {loadingMore ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            Loading more...
+                        </div>
+                    ) : null}
                 </div>
             )}
         </div>
-    );
+    )
 }

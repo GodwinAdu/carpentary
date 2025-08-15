@@ -494,7 +494,7 @@ const permissionCategories = {
   core: {
     title: "Core Modules",
     icon: <Home className="h-5 w-5" />,
-    permissions: ["dashboard", "hrManagement","map", "buildingTracking", "liveTracking", "account", "report"],
+    permissions: ["dashboard", "hrManagement", "map", "buildingTracking", "liveTracking", "account", "report"],
   },
   buildingManagement: {
     title: "Building Management",

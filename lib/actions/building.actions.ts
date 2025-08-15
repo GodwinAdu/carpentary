@@ -16,7 +16,7 @@ interface CreateBuildingProps {
     clientName: string;
     clientEmail: string;
     clientPhone: string;
-    address:string;
+    address: string;
 }
 
 async function _createBuilding(
@@ -105,8 +105,8 @@ async function _searchBuilding<T>(user: User, query: string): Promise<T[]> {
 
         console.log(results, "server result")
 
-        const features = results.map((doc: any) => ({
-            id: doc._id.toString(),
+        const features = results.map((doc: Record<string, unknown>) => ({
+            id: String(doc._id),
             imgUrlsArray: doc.imgUrls,
             coordinates: doc.coordinates,
             buildingType: doc.buildingType,
@@ -116,7 +116,7 @@ async function _searchBuilding<T>(user: User, query: string): Promise<T[]> {
             clientEmail: doc.clientEmail,
             clientPhone: doc.clientPhone,
             place_name: doc.buildingType || 'No description',
-            center: [doc.coordinates.lng, doc.coordinates.lat],
+            center: [Number((doc.coordinates as Record<string, unknown>)?.lng), Number((doc.coordinates as Record<string, unknown>)?.lat)],
             status: doc.status,
             createdAt: doc.createdAt,
             updatedAt: doc.updatedAt,
@@ -217,10 +217,129 @@ async function _deleteBuilding(user: User, id: string) {
 }
 
 
+interface AddCommentProps {
+    buildingId: string;
+    userName: string;
+    userEmail: string;
+    comment: string;
+    rating: number;
+    visitDate: string;
+    images?: string[];
+}
+
+interface AddPaymentProps {
+    buildingId: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    transactionId?: string;
+    paymentDate: string;
+    description: string;
+    receivedBy: string;
+    receivedByName: string;
+    receiptUrl?: string;
+}
+
+async function _addComment(user: User, values: AddCommentProps) {
+    try {
+        if (!user) throw new Error("User not authenticated");
+
+        await connectToDB();
+
+        const building = await Building.findById(values.buildingId);
+        if (!building) throw new Error("Building not found");
+
+        const newComment = {
+            user: user._id,
+            userName: values.userName,
+            userEmail: values.userEmail,
+            comment: values.comment,
+            rating: values.rating,
+            images: values.images || [],
+            isVerified: false,
+            visitDate: new Date(values.visitDate),
+        };
+
+        building.comments.push(newComment);
+        building.totalVisits += 1;
+
+        await building.save();
+
+        const history = new History({
+            actionType: 'COMMENT_ADDED',
+            details: {
+                itemId: building._id,
+                addedAt: new Date(),
+            },
+            message: `User ${user.fullName} added a comment to building (ID: ${building._id}) on ${new Date()}.`,
+            performedBy: user._id,
+            entityId: building._id,
+            entityType: 'BUILDING',
+        });
+
+        await history.save();
+
+        return { success: true, message: "Comment added successfully" };
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        throw new Error("Failed to add comment. Please try again.");
+    }
+}
+
+async function _addPayment(user: User, values: AddPaymentProps) {
+    try {
+        if (!user) throw new Error("User not authenticated");
+
+        await connectToDB();
+
+        const building = await Building.findById(values.buildingId);
+        if (!building) throw new Error("Building not found");
+
+        const newPayment = {
+            amount: values.amount,
+            currency: values.currency,
+            paymentMethod: values.paymentMethod,
+            transactionId: values.transactionId,
+            paymentDate: new Date(values.paymentDate),
+            description: values.description,
+            status: "completed",
+            receivedBy: values.receivedBy,
+            receivedByName: values.receivedByName,
+            receiptUrl: values.receiptUrl,
+        };
+
+        building.payments.push(newPayment);
+        building.totalPaidAmount += values.amount;
+
+        await building.save();
+
+        const history = new History({
+            actionType: 'PAYMENT_ADDED',
+            details: {
+                itemId: building._id,
+                amount: values.amount,
+                addedAt: new Date(),
+            },
+            message: `User ${user.fullName} added a payment of $${values.amount} to building (ID: ${building._id}) on ${new Date()}.`,
+            performedBy: user._id,
+            entityId: building._id,
+            entityType: 'BUILDING',
+        });
+
+        await history.save();
+
+        return { success: true, message: "Payment recorded successfully" };
+    } catch (error) {
+        console.error("Error adding payment:", error);
+        throw new Error("Failed to record payment. Please try again.");
+    }
+}
+
 export const createBuilding = await withAuth(_createBuilding)
 export const fetchBuildingById = await withAuth(_fetchBuildingById)
 export const searchBuilding = await withAuth(_searchBuilding)
 export const fetchAllBuilding = await withAuth(_fetchAllBuilding)
-
 export const updateBuilding = await withAuth(_updateBuilding)
 export const deleteBuilding = await withAuth(_deleteBuilding)
+export const addComment = await withAuth(_addComment)
+export const addPayment = await withAuth(_addPayment)

@@ -77,6 +77,9 @@ const actionTypes = [
     'DEPARTMENT_DELETED',
     'DEPARTMENT_RESTORED',
 
+    'COMMENT_ADDED',
+    'PAYMENT_ADDED',
+
     
 
 ];
@@ -94,7 +97,7 @@ const historySchema = new Schema(
         },
         performedBy: {
             type: Schema.Types.ObjectId,
-            ref: 'Staff', // Reference to the user who performed the action
+            ref: 'User', // Reference to the user who performed the action
             required: true,
         },
         timestamp: {

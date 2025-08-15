@@ -10,9 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, ChevronDown, Beaker, Settings, LogOut, User, Send } from 'lucide-react'
+import { Bell, ChevronDown, Settings, LogOut, User} from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
-import { useParams } from 'next/navigation'
 import { LucideIcon } from 'lucide-react';
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -28,14 +27,10 @@ interface UserDropdownProps {
 
 export default function UserDropdown({ username, avatarUrl, email, notificationCount = 0 }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const params = useParams();
-
-  const { schoolId, userId } = params;
 
   const handleLogout = async () => {
     try {
-      const redirectTo = "/"
-      await logout(redirectTo);
+      await logout();
       toast.success('Logged Out',{
         description: 'You have been successfully logged out.',
       })
@@ -92,8 +87,8 @@ export default function UserDropdown({ username, avatarUrl, email, notificationC
           <DropdownMenuSeparator className="bg-card-foreground" />
 
           <DropdownMenuGroup className="space-y-1">
-            <MenuItem icon={User} label="Profile" href={`/${schoolId}/admin/${userId}/profile`} />
-            <MenuItem icon={Settings} label="Support" href={`/${schoolId}/admin/${userId}/support`} />
+            <MenuItem icon={User} label="Profile" href={`/dashboard/profile`} />
+            <MenuItem icon={Settings} label="Support" href={`/dashboard/support`} />
             <MenuItem icon={LogOut} label="Sign Out" onClick={handleLogout} />
           </DropdownMenuGroup>
         </DropdownMenuContent>
