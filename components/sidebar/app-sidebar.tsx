@@ -29,7 +29,7 @@ export function AppSidebar(props: AppSidebarProps) {
         <TeamSwitcher user={user}  />
       </SidebarHeader>
       <SidebarContent className="scrollbar-hide">
-        <SideContent  role={userRole?.permissions} />
+        <SideContent user={user}  role={userRole?.permissions} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

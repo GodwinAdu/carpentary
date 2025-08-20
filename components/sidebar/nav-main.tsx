@@ -56,9 +56,10 @@ interface NavItem {
 
 interface NavMainProps {
   role: IRole | undefined;
+  user: any | undefined
 }
 
-export function NavMain({ role }: NavMainProps) {
+export function NavMain({ role, user }: NavMainProps) {
   const pathname = usePathname();
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
@@ -263,7 +264,7 @@ export function NavMain({ role }: NavMainProps) {
         // },
       ],
     },
-   
+
     {
       title: "My Todos",
       url: `/dashboard/todos`,
@@ -273,10 +274,10 @@ export function NavMain({ role }: NavMainProps) {
     {
       title: "Reports",
       url: `/dashboard/report`,
-      icon:LucideAlignVerticalJustifyCenter,
+      icon: LucideAlignVerticalJustifyCenter,
       isActive: false,
     },
-    {
+    user.role === "admin" && {
       title: "History",
       url: `/dashboard/history`,
       icon: HistoryIcon,
@@ -294,7 +295,7 @@ export function NavMain({ role }: NavMainProps) {
     //   icon: HelpCircle,
     //   isActive: false,
     // },
-    {
+    user.role === "admin" && {
       title: "Trash",
       url: `/dashboard/trash`,
       icon: Trash,
