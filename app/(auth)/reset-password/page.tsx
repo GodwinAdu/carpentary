@@ -3,8 +3,8 @@ import { ResetPasswordForm } from "@/components/auth/reset-password-form"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Reset Password - BotX",
-    description: "Set a new password for your BotX account.",
+    title: "Reset Password - GML Roofing Systems",
+    description: "Set a new password for your GML Roofing Systems account.",
 }
 
 export default function ResetPasswordPage() {
@@ -13,7 +13,7 @@ export default function ResetPasswordPage() {
             title="Reset Your Password"
             description="Enter your new password below. Make sure it's strong and memorable."
             backButtonLabel="Back to Sign In"
-            backButtonHref="/login"
+            backButtonHref="/sign-in"
         >
             <ResetPasswordForm />
         </AuthCardWrapper>

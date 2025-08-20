@@ -41,7 +41,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { addComment, addPayment } from "@/lib/actions/building.actions"
+import { useRouter } from "next/navigation"
+import { addComment, addPayment, updateBuildingQuotation } from "@/lib/actions/building.actions"
 import { fetchAllUsers } from "@/lib/actions/user.actions"
 import { toast } from "sonner"
 
@@ -50,6 +51,7 @@ interface BuildingDetailPageProps {
 }
 
 export default function BuildingDetailPage({ building }: BuildingDetailPageProps) {
+    const router = useRouter()
     const [users, setUsers] = useState<any[]>([])
     const [isPending, startTransition] = useTransition()
     // Comment form state
@@ -75,9 +77,21 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
         receiptUrl: "",
     })
 
+    // Quotation form state
+    const [quotationForm, setQuotationForm] = useState({
+        totalProjectCost: building.totalProjectCost?.toString() || "",
+        materialsCost: building.quotation?.materialsCost?.toString() || "",
+        laborCost: building.quotation?.laborCost?.toString() || "",
+        accessoriesCost: building.quotation?.accessoriesCost?.toString() || "",
+        transportationCost: building.quotation?.transportationCost?.toString() || "",
+        roofingType: building.quotation?.roofingType || "",
+        notes: building.quotation?.notes || "",
+    })
+
     // UI state
     const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false)
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
+    const [isQuotationDialogOpen, setIsQuotationDialogOpen] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
 
     // Load users when payment dialog opens
@@ -200,6 +214,36 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
         })
     }
 
+    const handleUpdateQuotation = async () => {
+        if (!quotationForm.totalProjectCost) {
+            setSubmitMessage("Please enter the total project cost")
+            return
+        }
+
+        startTransition(async () => {
+            try {
+                await updateBuildingQuotation({
+                    buildingId: building._id,
+                    totalProjectCost: Number.parseFloat(quotationForm.totalProjectCost),
+                    materialsCost: quotationForm.materialsCost ? Number.parseFloat(quotationForm.materialsCost) : undefined,
+                    laborCost: quotationForm.laborCost ? Number.parseFloat(quotationForm.laborCost) : undefined,
+                    accessoriesCost: quotationForm.accessoriesCost ? Number.parseFloat(quotationForm.accessoriesCost) : undefined,
+                    transportationCost: quotationForm.transportationCost ? Number.parseFloat(quotationForm.transportationCost) : undefined,
+                    roofingType: quotationForm.roofingType,
+                    notes: quotationForm.notes,
+                })
+
+                toast.success("Quotation updated successfully!")
+                setIsQuotationDialogOpen(false)
+                setSubmitMessage("")
+                router.refresh()
+            } catch (error) {
+                toast.error("Error updating quotation. Please try again.")
+                setSubmitMessage("Error updating quotation. Please try again.")
+            }
+        })
+    }
+
     const getStatusColor = (status: string) => {
         const colors = {
             completed: "bg-green-500",
@@ -258,7 +302,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                 <DollarSign className="h-8 w-8 text-green-600 mr-4" />
                                 <div>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        ${(building.totalPaidAmount || 0).toLocaleString()}
+                                        ₵{(building.totalPaidAmount || 0).toLocaleString()}
                                     </p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
                                 </div>
@@ -272,7 +316,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                 <TrendingUp className="h-8 w-8 text-orange-600 mr-4" />
                                 <div>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        ${(building.remainingBalance || 0).toLocaleString()}
+                                        ₵{(building.remainingBalance || 0).toLocaleString()}
                                     </p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
                                 </div>
@@ -309,8 +353,9 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
                         <Tabs defaultValue="overview" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4">
+                            <TabsList className="grid w-full grid-cols-5">
                                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                                <TabsTrigger value="quotation">Quotation</TabsTrigger>
                                 <TabsTrigger value="payments">Payments</TabsTrigger>
                                 <TabsTrigger value="comments">Reviews</TabsTrigger>
                                 <TabsTrigger value="gallery">Gallery</TabsTrigger>
@@ -347,7 +392,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                     <CardContent>
                                         <Progress value={paymentProgress} className="h-3 mb-2" />
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {paymentProgress.toFixed(1)}% completed • ${(building.remainingBalance || 0).toLocaleString()}{" "}
+                                            {paymentProgress.toFixed(1)}% completed • ₵{(building.remainingBalance || 0).toLocaleString()}{" "}
                                             remaining
                                         </p>
                                     </CardContent>
@@ -418,6 +463,362 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                         </Badge>
                                                     ))}
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="quotation" className="space-y-6">
+                                {/* Quotation Header */}
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">Project Quotation</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Manage project cost breakdown and quotation details
+                                        </p>
+                                    </div>
+                                    <Dialog open={isQuotationDialogOpen} onOpenChange={setIsQuotationDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Update Quotation
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-3xl">
+                                            <DialogHeader>
+                                                <DialogTitle>Update Project Quotation</DialogTitle>
+                                                <DialogDescription>
+                                                    Update the total project cost and cost breakdown for this building project
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="space-y-6">
+                                                {submitMessage && (
+                                                    <Alert>
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertDescription>{submitMessage}</AlertDescription>
+                                                    </Alert>
+                                                )}
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2">Total Roofing Cost *</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Enter total roofing cost"
+                                                            value={quotationForm.totalProjectCost}
+                                                            onChange={(e) => setQuotationForm({ ...quotationForm, totalProjectCost: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2">Roofing Materials (60%)</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Materials cost"
+                                                            value={quotationForm.materialsCost || (Number(quotationForm.totalProjectCost) * 0.60).toString()}
+                                                            onChange={(e) => setQuotationForm({ ...quotationForm, materialsCost: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2">Installation Labor (25%)</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Labor cost"
+                                                            value={quotationForm.laborCost || (Number(quotationForm.totalProjectCost) * 0.25).toString()}
+                                                            onChange={(e) => setQuotationForm({ ...quotationForm, laborCost: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2">Accessories & Hardware (10%)</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Accessories cost"
+                                                            value={quotationForm.accessoriesCost || (Number(quotationForm.totalProjectCost) * 0.10).toString()}
+                                                            onChange={(e) => setQuotationForm({ ...quotationForm, accessoriesCost: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2">Transportation & Misc (5%)</label>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Transportation cost"
+                                                            value={quotationForm.transportationCost || (Number(quotationForm.totalProjectCost) * 0.05).toString()}
+                                                            onChange={(e) => setQuotationForm({ ...quotationForm, transportationCost: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-end">
+                                                        <div className="w-full">
+                                                            <label className="block text-sm font-medium mb-2">Roofing Type</label>
+                                                            <Select value={quotationForm.roofingType} onValueChange={(value) => setQuotationForm({ ...quotationForm, roofingType: value })}>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select roofing type" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="metal_sheets">Metal Sheets</SelectItem>
+                                                                    <SelectItem value="clay_tiles">Clay Tiles</SelectItem>
+                                                                    <SelectItem value="concrete_tiles">Concrete Tiles</SelectItem>
+                                                                    <SelectItem value="asphalt_shingles">Asphalt Shingles</SelectItem>
+                                                                    <SelectItem value="corrugated_iron">Corrugated Iron</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Roofing Specifications & Notes</label>
+                                                    <Textarea
+                                                        placeholder="Add roofing specifications, material quality, installation notes, warranty details..."
+                                                        value={quotationForm.notes}
+                                                        onChange={(e) => setQuotationForm({ ...quotationForm, notes: e.target.value })}
+                                                        rows={3}
+                                                    />
+                                                </div>
+
+                                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-medium">Updated Roofing Cost:</span>
+                                                        <span className="text-xl font-bold text-blue-600">
+                                                            ₵{Number(quotationForm.totalProjectCost || 0).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-sm text-gray-600 mt-1">
+                                                        Current: ₵{(building.totalProjectCost || 0).toLocaleString()}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2 pt-4">
+                                                    <Button onClick={handleUpdateQuotation} disabled={isPending} className="flex-1">
+                                                        {isPending ? "Updating..." : "Update Quotation"}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setIsQuotationDialogOpen(false)}
+                                                        disabled={isPending}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+
+                                {/* Current Quotation Summary */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <DollarSign className="h-5 w-5" />
+                                            Quotation Summary
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                                <p className="text-2xl font-bold text-blue-600">
+                                                    ₵{(building.totalProjectCost || 0).toLocaleString()}
+                                                </p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Project Cost</p>
+                                            </div>
+                                            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                                <p className="text-2xl font-bold text-green-600">
+                                                    ₵{(building.totalPaidAmount || 0).toLocaleString()}
+                                                </p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
+                                            </div>
+                                            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                                                <p className="text-2xl font-bold text-orange-600">
+                                                    ₵{(building.remainingBalance || 0).toLocaleString()}
+                                                </p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Outstanding Balance</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-6">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-medium">Payment Progress</span>
+                                                <span className="text-sm text-gray-600">{paymentProgress.toFixed(1)}%</span>
+                                            </div>
+                                            <Progress value={paymentProgress} className="h-3" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Roofing Cost Breakdown */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Roofing Cost Breakdown</CardTitle>
+                                        <CardDescription>Detailed breakdown of roofing materials and installation costs</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="border rounded-lg p-4">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="font-medium">Roofing Materials</h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            {building.quotation?.roofingType ? building.quotation.roofingType.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'Metal sheets, tiles, shingles, underlayment'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₵{(building.quotation?.materialsCost || (building.totalProjectCost || 0) * 0.60).toLocaleString()}</p>
+                                                        <p className="text-sm text-gray-600">{building.quotation?.materialsCost ? Math.round((building.quotation.materialsCost / (building.totalProjectCost || 1)) * 100) : 60}%</p>
+                                                    </div>
+                                                </div>
+                                                <Progress value={building.quotation?.materialsCost ? Math.round((building.quotation.materialsCost / (building.totalProjectCost || 1)) * 100) : 60} className="h-2" />
+                                            </div>
+
+                                            <div className="border rounded-lg p-4">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="font-medium">Installation Labor</h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Professional roofing installation and setup
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₵{(building.quotation?.laborCost || (building.totalProjectCost || 0) * 0.25).toLocaleString()}</p>
+                                                        <p className="text-sm text-gray-600">{building.quotation?.laborCost ? Math.round((building.quotation.laborCost / (building.totalProjectCost || 1)) * 100) : 25}%</p>
+                                                    </div>
+                                                </div>
+                                                <Progress value={building.quotation?.laborCost ? Math.round((building.quotation.laborCost / (building.totalProjectCost || 1)) * 100) : 25} className="h-2" />
+                                            </div>
+
+                                            <div className="border rounded-lg p-4">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="font-medium">Accessories & Hardware</h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Gutters, fasteners, flashing, ridge caps
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₵{(building.quotation?.accessoriesCost || (building.totalProjectCost || 0) * 0.10).toLocaleString()}</p>
+                                                        <p className="text-sm text-gray-600">{building.quotation?.accessoriesCost ? Math.round((building.quotation.accessoriesCost / (building.totalProjectCost || 1)) * 100) : 10}%</p>
+                                                    </div>
+                                                </div>
+                                                <Progress value={building.quotation?.accessoriesCost ? Math.round((building.quotation.accessoriesCost / (building.totalProjectCost || 1)) * 100) : 10} className="h-2" />
+                                            </div>
+
+                                            <div className="border rounded-lg p-4">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="font-medium">Transportation & Miscellaneous</h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Delivery, permits, cleanup, contingency
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₵{(building.quotation?.transportationCost || (building.totalProjectCost || 0) * 0.05).toLocaleString()}</p>
+                                                        <p className="text-sm text-gray-600">{building.quotation?.transportationCost ? Math.round((building.quotation.transportationCost / (building.totalProjectCost || 1)) * 100) : 5}%</p>
+                                                    </div>
+                                                </div>
+                                                <Progress value={building.quotation?.transportationCost ? Math.round((building.quotation.transportationCost / (building.totalProjectCost || 1)) * 100) : 5} className="h-2" />
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 pt-4 border-t">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-lg font-semibold">Total Roofing Cost</span>
+                                                <span className="text-2xl font-bold text-blue-600">
+                                                    ₵{(building.totalProjectCost || 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            {building.quotation?.notes && (
+                                                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        <strong>Notes:</strong> {building.quotation.notes}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Roofing Timeline */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Roofing Installation Timeline</CardTitle>
+                                        <CardDescription>Estimated roofing project phases and milestones</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
+                                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <p className="font-medium">Site Assessment</p>
+                                                    <p className="text-sm text-gray-600">Roof inspection, measurements, material planning</p>
+                                                </div>
+                                                <Badge variant="secondary">Completed</Badge>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
+                                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <p className="font-medium">Material Procurement</p>
+                                                    <p className="text-sm text-gray-600">Sourcing and delivery of roofing materials</p>
+                                                </div>
+                                                <Badge>In Progress</Badge>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
+                                                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <p className="font-medium">Roof Installation</p>
+                                                    <p className="text-sm text-gray-600">Installing roofing materials and accessories</p>
+                                                </div>
+                                                <Badge variant="outline">Pending</Badge>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
+                                                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <p className="font-medium">Final Inspection</p>
+                                                    <p className="text-sm text-gray-600">Quality check and project completion</p>
+                                                </div>
+                                                <Badge variant="outline">Pending</Badge>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Roofing Terms & Conditions */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Roofing Terms & Conditions</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-3 text-sm">
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                <p>Payment schedule: 50% upfront for materials, 50% on installation completion</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                <p>All roofing materials included as per specifications</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                <p>24-month warranty on roofing materials and installation</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                <p>Free maintenance check after 6 months</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                                <p>Weather-resistant installation guarantee</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5" />
+                                                <p>Additional costs may apply for structural repairs or modifications</p>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -585,7 +986,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                         <div className={`w-3 h-3 rounded-full ${getStatusColor(payment.status)}`} />
                                                         <div>
                                                             <p className="font-medium text-lg">
-                                                                ${payment.amount.toLocaleString()} {payment.currency}
+                                                                ₵{payment.amount.toLocaleString()} {payment.currency}
                                                             </p>
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">{payment.description}</p>
                                                             {payment.transactionId && (

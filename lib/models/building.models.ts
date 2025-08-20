@@ -55,6 +55,28 @@ const PaymentSchema = new Schema(
     },
 )
 
+const QuotationSchema = new Schema(
+    {
+        totalProjectCost: { type: Number, required: true },
+        materialsCost: { type: Number },
+        laborCost: { type: Number },
+        accessoriesCost: { type: Number },
+        transportationCost: { type: Number },
+        roofingType: {
+            type: String,
+            enum: ["metal_sheets", "clay_tiles", "concrete_tiles", "asphalt_shingles", "corrugated_iron"],
+        },
+        notes: { type: String },
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+        },
+    },
+    {
+        timestamps: true,
+    },
+)
+
 const BuildingSchema = new Schema(
     {
         imgUrls: { type: [String], required: true },
@@ -65,7 +87,6 @@ const BuildingSchema = new Schema(
         address: { type: String },
         category: {
             type: String,
-            enum: ["Commercial", "Residential", "Industrial", "Public", "Mixed-Use", "Other"],
         },
         buildingType: { type: String, required: true },
         description: { type: String },
@@ -85,6 +106,9 @@ const BuildingSchema = new Schema(
             contractor: { type: String },
             parkingSpaces: { type: Number },
             amenities: [String],
+            roofArea: { type: Number }, // in sq ft - specific for roofing business
+            roofPitch: { type: String }, // roof slope/pitch
+            existingRoofType: { type: String }, // current roof type if replacement
         },
 
         // Financial Information
@@ -92,6 +116,7 @@ const BuildingSchema = new Schema(
         totalPaidAmount: { type: Number, default: 0 },
         remainingBalance: { type: Number },
         payments: [PaymentSchema],
+        quotation: QuotationSchema,
 
         // Comments and Reviews
         comments: [CommentSchema],

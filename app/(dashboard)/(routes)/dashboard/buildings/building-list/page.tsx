@@ -78,7 +78,7 @@ export default async function BuildingsPage() {
               <div className="flex items-center">
                 <DollarSign className="h-8 w-8 text-green-600 mr-4" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">${totalRevenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalRevenue.toLocaleString()}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
                 </div>
               </div>
@@ -90,7 +90,7 @@ export default async function BuildingsPage() {
               <div className="flex items-center">
                 <TrendingUp className="h-8 w-8 text-orange-600 mr-4" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">${totalPending.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalPending.toLocaleString()}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default async function BuildingsPage() {
                             <div className="flex justify-between mb-1">
                               <span>Payment Progress</span>
                               <span>
-                                ${building.totalPaidAmount?.toLocaleString() || 0} / $
+                                ₵{building.totalPaidAmount?.toLocaleString() || 0} / $
                                 {building.totalProjectCost?.toLocaleString() || 0}
                               </span>
                             </div>

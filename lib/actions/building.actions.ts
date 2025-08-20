@@ -6,6 +6,7 @@ import Building from "../models/building.models";
 import History from "../models/history.models";
 import { connectToDB } from "../mongoose";
 import { deleteDocument } from "./trash.actions";
+import { createActivity } from "./activity.actions";
 
 interface CreateBuildingProps {
     image: string;
@@ -60,6 +61,12 @@ async function _createBuilding(
         await Promise.all([
             building.save(),
             history.save(),
+            createActivity({
+                userId: user._id,
+                type: 'building_create',
+                action: `Created new building: ${buildingType}`,
+                details: { entityId: building._id, entityType: 'Building' }
+            })
         ]);
 
         revalidatePath(path);
@@ -79,6 +86,13 @@ async function _fetchBuildingById(user: User, id: string) {
         const building = await Building.findById(id);
 
         if (!building) throw new Error("Building not found");
+
+        await createActivity({
+            userId: user._id,
+            type: 'building_access',
+            action: `Viewed building: ${building.buildingType}`,
+            details: { entityId: id, entityType: 'Building' }
+        });
 
         return JSON.parse(JSON.stringify(building));
     } catch (error) {
@@ -181,9 +195,16 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
             entityType: 'BUILDING',
         });
 
-        await history.save();
-
-        await building.save();
+        await Promise.all([
+            history.save(),
+            building.save(),
+            createActivity({
+                userId: user._id,
+                type: 'building_update',
+                action: `Updated building: ${building.buildingType}`,
+                details: { entityId: id, entityType: 'Building' }
+            })
+        ]);
 
         return { success: true, message: "Building updated successfully" };
     } catch (error) {
@@ -200,14 +221,22 @@ async function _deleteBuilding(user: User, id: string) {
 
         const building = await Building.findById(id)
 
-        await deleteDocument({
-            actionType: 'BUILDING_DELETED',
-            documentId: building._id,
-            collectionName: 'Building',
-            userId: `${user?._id}`,
-            trashMessage: `Building with (ID: ${id}) was moved to trash by ${user.fullName}.`,
-            historyMessage: `User ${user.fullName} deleted Building with (ID: ${id}) on ${new Date().toLocaleString()}.`
-        });
+        await Promise.all([
+            deleteDocument({
+                actionType: 'BUILDING_DELETED',
+                documentId: building._id,
+                collectionName: 'Building',
+                userId: `${user?._id}`,
+                trashMessage: `Building with (ID: ${id}) was moved to trash by ${user.fullName}.`,
+                historyMessage: `User ${user.fullName} deleted Building with (ID: ${id}) on ${new Date().toLocaleString()}.`
+            }),
+            createActivity({
+                userId: user._id,
+                type: 'building_access',
+                action: `Deleted building: ${building.buildingType}`,
+                details: { entityId: id, entityType: 'Building' }
+            })
+        ]);
 
         return { success: true, message: "Building deleted successfully" };
     } catch (error) {
@@ -240,6 +269,17 @@ interface AddPaymentProps {
     receiptUrl?: string;
 }
 
+interface UpdateQuotationProps {
+    buildingId: string;
+    totalProjectCost: number;
+    materialsCost?: number;
+    laborCost?: number;
+    accessoriesCost?: number;
+    transportationCost?: number;
+    roofingType?: string;
+    notes?: string;
+}
+
 async function _addComment(user: User, values: AddCommentProps) {
     try {
         if (!user) throw new Error("User not authenticated");
@@ -263,8 +303,6 @@ async function _addComment(user: User, values: AddCommentProps) {
         building.comments.push(newComment);
         building.totalVisits += 1;
 
-        await building.save();
-
         const history = new History({
             actionType: 'COMMENT_ADDED',
             details: {
@@ -277,7 +315,16 @@ async function _addComment(user: User, values: AddCommentProps) {
             entityType: 'BUILDING',
         });
 
-        await history.save();
+        await Promise.all([
+            building.save(),
+            history.save(),
+            createActivity({
+                userId: user._id,
+                type: 'building_access',
+                action: `Added comment to building: ${building.buildingType}`,
+                details: { entityId: building._id, entityType: 'Building' }
+            })
+        ]);
 
         return { success: true, message: "Comment added successfully" };
     } catch (error) {
@@ -311,8 +358,6 @@ async function _addPayment(user: User, values: AddPaymentProps) {
         building.payments.push(newPayment);
         building.totalPaidAmount += values.amount;
 
-        await building.save();
-
         const history = new History({
             actionType: 'PAYMENT_ADDED',
             details: {
@@ -326,12 +371,93 @@ async function _addPayment(user: User, values: AddPaymentProps) {
             entityType: 'BUILDING',
         });
 
-        await history.save();
+        await Promise.all([
+            building.save(),
+            history.save(),
+            createActivity({
+                userId: user._id,
+                type: 'building_access',
+                action: `Added payment of $${values.amount} to building: ${building.buildingType}`,
+                details: { entityId: building._id, entityType: 'Building', metadata: { amount: values.amount } }
+            })
+        ]);
 
         return { success: true, message: "Payment recorded successfully" };
     } catch (error) {
         console.error("Error adding payment:", error);
         throw new Error("Failed to record payment. Please try again.");
+    }
+}
+
+async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps) {
+    try {
+        if (!user) throw new Error("User not authenticated");
+
+        await connectToDB();
+
+        const building = await Building.findById(values.buildingId);
+        if (!building) throw new Error("Building not found");
+
+        const oldCost = building.totalProjectCost || 0;
+
+        // Update the main cost field
+        building.totalProjectCost = values.totalProjectCost;
+        building.modifyBy = user._id;
+
+        // Create quotation object
+        const quotationData = {
+            totalProjectCost: values.totalProjectCost,
+            materialsCost: values.materialsCost || Math.round(values.totalProjectCost * 0.60),
+            laborCost: values.laborCost || Math.round(values.totalProjectCost * 0.25),
+            accessoriesCost: values.accessoriesCost || Math.round(values.totalProjectCost * 0.10),
+            transportationCost: values.transportationCost || Math.round(values.totalProjectCost * 0.05),
+            roofingType: values.roofingType,
+            notes: values.notes,
+            createdBy: user._id,
+        };
+
+        building.quotation = quotationData;
+
+        // Save building first
+        await building.save();
+
+        // Create history and activity
+        const history = new History({
+            actionType: 'QUOTATION_UPDATED',
+            details: {
+                itemId: building._id,
+                oldValue: oldCost,
+                newValue: values.totalProjectCost,
+                updatedAt: new Date(),
+            },
+            message: `User ${user.fullName} updated quotation for building (ID: ${building._id}) from ₵${oldCost} to ₵${values.totalProjectCost} on ${new Date()}.`,
+            performedBy: user._id,
+            entityId: building._id,
+            entityType: 'BUILDING',
+        });
+
+        await Promise.all([
+            history.save(),
+            createActivity({
+                userId: user._id,
+                type: 'building_update',
+                action: `Updated quotation for building: ${building.buildingType}`,
+                details: {
+                    entityId: building._id,
+                    entityType: 'Building',
+                    oldValue: oldCost.toString(),
+                    newValue: values.totalProjectCost.toString(),
+                    metadata: quotationData
+                }
+            })
+        ]);
+
+        revalidatePath(`/dashboard/buildings/building-list/${values.buildingId}`);
+
+        return { success: true, message: "Quotation updated successfully" };
+    } catch (error) {
+        console.error("Error updating quotation:", error);
+        throw error;
     }
 }
 
@@ -343,3 +469,4 @@ export const updateBuilding = await withAuth(_updateBuilding)
 export const deleteBuilding = await withAuth(_deleteBuilding)
 export const addComment = await withAuth(_addComment)
 export const addPayment = await withAuth(_addPayment)
+export const updateBuildingQuotation = await withAuth(_updateBuildingQuotation)

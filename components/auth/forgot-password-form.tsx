@@ -63,14 +63,14 @@ export function ForgotPasswordForm() {
                             type="email"
                             placeholder="name@example.com"
                             {...register("email")}
-                            className="bg-slate-800 border-slate-700 focus:border-brand-primary text-slate-50"
+                            className="transition-all duration-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 hover:border-amber-300"
                             disabled={isLoading}
                         />
                         {errors.email && <p className="text-sm text-red-400">{errors.email.message}</p>}
                     </div>
                     <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                        className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                         disabled={isLoading}
                     >
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}

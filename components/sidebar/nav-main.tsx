@@ -18,7 +18,11 @@ import {
   DollarSign,
   CreditCard,
   HousePlusIcon,
-  Map
+  Map,
+  HelpCircle,
+  Settings,
+  CheckSquare,
+  LucideAlignVerticalJustifyCenter
 } from "lucide-react"
 import {
   Collapsible,
@@ -82,13 +86,13 @@ export function NavMain({ role }: NavMainProps) {
       isActive: false,
       roleField: "dashboard"
     },
-    {
-      title: "Customers",
-      url: `/dashboard/customers`,
-      icon: Map,
-      isActive: false,
-      roleField: "dashboard"
-    },
+    // {
+    //   title: "Customers",
+    //   url: `/dashboard/customers`,
+    //   icon: Map,
+    //   isActive: false,
+    //   roleField: "dashboard"
+    // },
     {
       title: "Building Tracking",
       url: "#",
@@ -112,90 +116,90 @@ export function NavMain({ role }: NavMainProps) {
         },
       ]
     },
-    {
-      title: "Reports",
-      url: "#",
-      icon: BarChart3,
-      roleField: "report",
-      items: [
-        {
-          title: "Profit/Lost Report",
-          url: `/dashboard/report/profit-lost-report`,
-          roleField: "profitLostReport"
-        },
-        {
-          title: "Items Report",
-          url: `/dashboard/report/items-report`,
-          roleField: "itemsReport"
-        },
-        {
-          title: "Register Report",
-          url: `/dashboard/report/register-report`,
-          roleField: "registerReport"
-        },
-        {
-          title: "Expenses Report",
-          url: `/dashboardreport//expenses-report`,
-          roleField: "expensesReport"
-        }, {
-          title: "Product Sell Report",
-          url: `/dashboard/report/product-sell-report`,
-          roleField: "productSellReport"
-        }, {
-          title: "Product Purchase Report",
-          url: `/dashboard/report/product-purchase-report`,
-          roleField: "productPurchaseReport"
-        }, {
-          title: "Sell Return Report",
-          url: `/dashboard/report/sell-return-report`,
-          roleField: "sellReturnReport"
-        }, {
-          title: "Purchase Return Report",
-          url: `/dashboard/report/purchase-return-report`,
-          roleField: "purchaseReturnReport"
-        }, {
-          title: "Trending Product Report",
-          url: `/dashboard/report/trending-product-report`,
-          roleField: "trendingProductReport"
-        }, {
-          title: "Purchase & Sale Report",
-          url: `/dashboard/report/purchase-sale-report`,
-          // roleField: ""
-        }, {
-          title: "Stock Adjustment Report",
-          url: `/dashboard/report/stock-adjustment-report`,
-          roleField: "stockAdjustmentReport"
-        }, {
-          title: "Stock Transfer Report",
-          url: `/dashboard/report/stock-transfer-report`,
-          roleField: "stockTransferReport"
-        }, {
-          title: "Stock Expiry Report",
-          url: `/dashboard/report/stock-expiry-report`,
-          roleField: "stockExpiryReport"
-        }, {
-          title: "Stock Report",
-          url: `/dashboard/report/stock-report`,
-          roleField: "stockReport"
-        }, {
-          title: "Customer Group Report",
-          url: `/dashboard/report/customer-group-report`,
-          roleField: "customerGroupReport"
-        }, {
-          title: "Customer & Supplier Report",
-          url: `/dashboard/report/customer-supplier-report`,
-          roleField: "customerSupplierReport"
-        }, {
-          title: "Tax Report",
-          url: `/dashboard/report/tax-report`,
-          roleField: "taxReport"
-        }, {
-          title: "Sale Representative Report",
-          url: `/dashboard/report/sale-representative-report`,
-          roleField: "saleRepresentativeReport",
-        }
-      ],
-    },
+    // {
+    //   title: "Reports",
+    //   url: "#",
+    //   icon: BarChart3,
+    //   roleField: "report",
+    //   items: [
+    //     {
+    //       title: "Profit/Lost Report",
+    //       url: `/dashboard/report/profit-lost-report`,
+    //       roleField: "profitLostReport"
+    //     },
+    //     {
+    //       title: "Items Report",
+    //       url: `/dashboard/report/items-report`,
+    //       roleField: "itemsReport"
+    //     },
+    //     {
+    //       title: "Register Report",
+    //       url: `/dashboard/report/register-report`,
+    //       roleField: "registerReport"
+    //     },
+    //     {
+    //       title: "Expenses Report",
+    //       url: `/dashboardreport//expenses-report`,
+    //       roleField: "expensesReport"
+    //     }, {
+    //       title: "Product Sell Report",
+    //       url: `/dashboard/report/product-sell-report`,
+    //       roleField: "productSellReport"
+    //     }, {
+    //       title: "Product Purchase Report",
+    //       url: `/dashboard/report/product-purchase-report`,
+    //       roleField: "productPurchaseReport"
+    //     }, {
+    //       title: "Sell Return Report",
+    //       url: `/dashboard/report/sell-return-report`,
+    //       roleField: "sellReturnReport"
+    //     }, {
+    //       title: "Purchase Return Report",
+    //       url: `/dashboard/report/purchase-return-report`,
+    //       roleField: "purchaseReturnReport"
+    //     }, {
+    //       title: "Trending Product Report",
+    //       url: `/dashboard/report/trending-product-report`,
+    //       roleField: "trendingProductReport"
+    //     }, {
+    //       title: "Purchase & Sale Report",
+    //       url: `/dashboard/report/purchase-sale-report`,
+    //       // roleField: ""
+    //     }, {
+    //       title: "Stock Adjustment Report",
+    //       url: `/dashboard/report/stock-adjustment-report`,
+    //       roleField: "stockAdjustmentReport"
+    //     }, {
+    //       title: "Stock Transfer Report",
+    //       url: `/dashboard/report/stock-transfer-report`,
+    //       roleField: "stockTransferReport"
+    //     }, {
+    //       title: "Stock Expiry Report",
+    //       url: `/dashboard/report/stock-expiry-report`,
+    //       roleField: "stockExpiryReport"
+    //     }, {
+    //       title: "Stock Report",
+    //       url: `/dashboard/report/stock-report`,
+    //       roleField: "stockReport"
+    //     }, {
+    //       title: "Customer Group Report",
+    //       url: `/dashboard/report/customer-group-report`,
+    //       roleField: "customerGroupReport"
+    //     }, {
+    //       title: "Customer & Supplier Report",
+    //       url: `/dashboard/report/customer-supplier-report`,
+    //       roleField: "customerSupplierReport"
+    //     }, {
+    //       title: "Tax Report",
+    //       url: `/dashboard/report/tax-report`,
+    //       roleField: "taxReport"
+    //     }, {
+    //       title: "Sale Representative Report",
+    //       url: `/dashboard/report/sale-representative-report`,
+    //       roleField: "saleRepresentativeReport",
+    //     }
+    //   ],
+    // },
     {
       title: "Hr and Payroll",
       url: "#",
@@ -217,55 +221,79 @@ export function NavMain({ role }: NavMainProps) {
           url: `/dashboard/hr/manage-role`,
           roleField: "manageHr"
         },
-        {
-          title: "Salary Structure",
-          url: `/dashboard/hr-payroll/salary-structure`,
-          roleField: "manageHr"
-        },
-        {
-          title: "Salary Assign",
-          url: `/dashboard/hr-payroll/salary-assign`,
-          roleField: "manageHr"
-        },
-        {
-          title: "Salary Payment",
-          url: `/dashboard/hr-payroll/salary-payment`,
-          roleField: "manageHr"
-        },
-        {
-          title: "Request Salary",
-          url: `/dashboard/hr-payroll/request-salary`,
-          roleField: "manageRequestSalary",
-        },
-        {
-          title: "Manage Salary Request",
-          url: `/dashboard/hr-payroll/manage-request-salary`,
-          roleField: "manageHr"
-        },
-        {
-          title: "Request Leave",
-          url: `/dashboard/hr-payroll/request-leave`,
-          roleField: "manageRequestLeave",
-        },
-        {
-          title: "Manage Leave",
-          url: `/dashboard/hr-payroll/manage-leave`,
-          roleField: "manageHr"
-        },
-        {
-          title: "Awards",
-          url: `/dashboard/hr-payroll/awards`,
-          roleField: "manageHr"
-        },
+        // {
+        //   title: "Salary Structure",
+        //   url: `/dashboard/hr-payroll/salary-structure`,
+        //   roleField: "manageHr"
+        // },
+        // {
+        //   title: "Salary Assign",
+        //   url: `/dashboard/hr-payroll/salary-assign`,
+        //   roleField: "manageHr"
+        // },
+        // {
+        //   title: "Salary Payment",
+        //   url: `/dashboard/hr-payroll/salary-payment`,
+        //   roleField: "manageHr"
+        // },
+        // {
+        //   title: "Request Salary",
+        //   url: `/dashboard/hr-payroll/request-salary`,
+        //   roleField: "manageRequestSalary",
+        // },
+        // {
+        //   title: "Manage Salary Request",
+        //   url: `/dashboard/hr-payroll/manage-request-salary`,
+        //   roleField: "manageHr"
+        // },
+        // {
+        //   title: "Request Leave",
+        //   url: `/dashboard/hr-payroll/request-leave`,
+        //   roleField: "manageRequestLeave",
+        // },
+        // {
+        //   title: "Manage Leave",
+        //   url: `/dashboard/hr-payroll/manage-leave`,
+        //   roleField: "manageHr"
+        // },
+        // {
+        //   title: "Awards",
+        //   url: `/dashboard/hr-payroll/awards`,
+        //   roleField: "manageHr"
+        // },
       ],
     },
    
+    {
+      title: "My Todos",
+      url: `/dashboard/todos`,
+      icon: CheckSquare,
+      isActive: false,
+    },
+    {
+      title: "Reports",
+      url: `/dashboard/report`,
+      icon:LucideAlignVerticalJustifyCenter,
+      isActive: false,
+    },
     {
       title: "History",
       url: `/dashboard/history`,
       icon: HistoryIcon,
       isActive: false,
     },
+    // {
+    //   title: "Settings",
+    //   url: `/settings`,
+    //   icon: Settings,
+    //   isActive: false,
+    // },
+    // {
+    //   title: "Support",
+    //   url: `/support`,
+    //   icon: HelpCircle,
+    //   isActive: false,
+    // },
     {
       title: "Trash",
       url: `/dashboard/trash`,

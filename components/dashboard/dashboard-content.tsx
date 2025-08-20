@@ -2,13 +2,11 @@
 
 import { Badge } from "@/components/ui/badge"
 import { MetricsCards } from "./metrics-card"
-import { AdvancedSalesChart } from "./advanced-sales-chart"
-import { RevenueBreakdown } from "./revenue-breakdown"
-import { InventoryOverview } from "./inventory-overview"
 import { UserAnalytics } from "./user-analytics"
 import { RecentOrders } from "./recent-orders"
 import { TopProducts } from "./top-product"
 import { LowStockAlerts } from "./low-stock-alert"
+
 
 
 export function DashboardContent() {
@@ -23,7 +21,7 @@ export function DashboardContent() {
                             Dashboard Overview
                         </h1>
                         <p className="text-muted-foreground text-lg">
-                            Welcome back, John! Here's what's happening with your business today.
+                            Welcome back! Here's what's happening with your business today.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -45,18 +43,19 @@ export function DashboardContent() {
 
             <MetricsCards />
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            {/* <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
                     <AdvancedSalesChart />
                 </div>
                 <div>
                     <RevenueBreakdown />
                 </div>
-            </div>
+            </div> */}
 
             <div className="grid gap-6 lg:grid-cols-2">
-                <InventoryOverview />
+                {/* <InventoryOverview /> */}
                 <UserAnalytics />
+                <TopProducts />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -64,7 +63,7 @@ export function DashboardContent() {
                     <RecentOrders />
                 </div>
                 <div className="space-y-6">
-                    <TopProducts />
+
                     <LowStockAlerts />
                 </div>
             </div>
