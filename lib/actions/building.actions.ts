@@ -42,15 +42,15 @@ async function _createBuilding(
     try {
         if (!user) throw new Error("User not authenticated");
 
-        const { 
-            imgUrls, 
-            coordinates, 
-            buildingType, 
-            description, 
-            category, 
-            clientName, 
-            clientEmail, 
-            clientPhone, 
+        const {
+            imgUrls,
+            coordinates,
+            buildingType,
+            description,
+            category,
+            clientName,
+            clientEmail,
+            clientPhone,
             clientCompany,
             address,
             buildingDetails,
@@ -248,7 +248,7 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
         ]);
 
         revalidatePath(path);
-        
+
         return { success: true, message: "Building updated successfully" };
     } catch (error) {
         console.log("error while updating Building", error)
@@ -392,6 +392,13 @@ async function _addPayment(user: User, values: AddPaymentProps) {
         const building = await Building.findById(values.buildingId);
         if (!building) throw new Error("Building not found");
 
+        // Prevent overpayment
+        if (building.totalPaidAmount + values.amount > building.totalProjectCost) {
+            throw new Error(
+                `Payment exceeds project cost. Remaining balance: ${building.totalProjectCost - building.totalPaidAmount}`
+            );
+        }
+
         const newPayment = {
             amount: values.amount,
             currency: values.currency,
@@ -405,8 +412,18 @@ async function _addPayment(user: User, values: AddPaymentProps) {
             receiptUrl: values.receiptUrl,
         };
 
+        // Add payment
         building.payments.push(newPayment);
         building.totalPaidAmount += values.amount;
+
+        // 🔹 Update project status based on payment progress
+        if (building.totalPaidAmount === 0) {
+            building.status = "pending";
+        } else if (building.totalPaidAmount < building.totalProjectCost) {
+            building.status = "partially_paid";
+        } else if (building.totalPaidAmount >= building.totalProjectCost) {
+            building.status = "fully_paid";
+        }
 
         const history = new History({
             actionType: 'PAYMENT_ADDED',
@@ -415,7 +432,7 @@ async function _addPayment(user: User, values: AddPaymentProps) {
                 amount: values.amount,
                 addedAt: new Date(),
             },
-            message: `User ${user.fullName} added a payment of $${values.amount} to building (ID: ${building._id}) on ${new Date()}.`,
+            message: `User ${user.fullName} added a payment of $${values.amount} to building (ID: ${building._id}) on ${new Date().toLocaleString()}.`,
             performedBy: user._id,
             entityId: building._id,
             entityType: 'BUILDING',
@@ -428,16 +445,21 @@ async function _addPayment(user: User, values: AddPaymentProps) {
                 userId: user._id,
                 type: 'building_access',
                 action: `Added payment of $${values.amount} to building: ${building.buildingType}`,
-                details: { entityId: building._id, entityType: 'Building', metadata: { amount: values.amount } }
+                details: {
+                    entityId: building._id,
+                    entityType: 'Building',
+                    metadata: { amount: values.amount, status: building.status }
+                }
             })
         ]);
 
-        return { success: true, message: "Payment recorded successfully" };
+        return { success: true, message: "Payment recorded successfully", status: building.status };
     } catch (error) {
         console.error("Error adding payment:", error);
         throw new Error("Failed to record payment. Please try again.");
     }
 }
+
 
 async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps) {
     try {
@@ -450,7 +472,7 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
 
         const oldCost = building.totalProjectCost || 0;
 
-        // Update the main cost field
+        // Update main cost field
         building.totalProjectCost = values.totalProjectCost;
         building.modifyBy = user._id;
 
@@ -468,10 +490,22 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
 
         building.quotation = quotationData;
 
+        // 🔹 Update status based on quotation and payments
+        if (building.totalPaidAmount >= building.totalProjectCost && building.totalProjectCost > 0) {
+            building.status = "fully_paid";
+        } else if (building.totalPaidAmount > 0 && building.totalPaidAmount < building.totalProjectCost) {
+            building.status = "partially_paid";
+        } else if (values.totalProjectCost > 0) {
+            // If quotation is set but no payment yet
+            if (building.status === "pending" || !building.status) {
+                building.status = "quotation_sent";
+            }
+        }
+
         // Save building first
         await building.save();
 
-        // Create history and activity
+        // History entry
         const history = new History({
             actionType: 'QUOTATION_UPDATED',
             details: {
@@ -480,7 +514,7 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
                 newValue: values.totalProjectCost,
                 updatedAt: new Date(),
             },
-            message: `User ${user.fullName} updated quotation for building (ID: ${building._id}) from ₵${oldCost} to ₵${values.totalProjectCost} on ${new Date()}.`,
+            message: `User ${user.fullName} updated quotation for building (ID: ${building._id}) from ₵${oldCost} to ₵${values.totalProjectCost} on ${new Date().toLocaleString()}.`,
             performedBy: user._id,
             entityId: building._id,
             entityType: 'BUILDING',
@@ -489,7 +523,7 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
         await Promise.all([
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_update',
                 action: `Updated quotation for building: ${building.buildingType}`,
                 details: {
@@ -497,14 +531,14 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
                     entityType: 'Building',
                     oldValue: oldCost.toString(),
                     newValue: values.totalProjectCost.toString(),
-                    metadata: quotationData
+                    metadata: { ...quotationData, status: building.status }
                 }
             })
         ]);
 
         revalidatePath(`/dashboard/buildings/building-list/${values.buildingId}`);
 
-        return { success: true, message: "Quotation updated successfully" };
+        return { success: true, message: "Quotation updated successfully", status: building.status };
     } catch (error) {
         console.error("Error updating quotation:", error);
         throw error;
@@ -555,7 +589,7 @@ async function _updateBuildingStatus(user: User, values: UpdateStatusProps) {
                 details: {
                     entityId: building._id,
                     entityType: 'Building',
-                    oldValue: oldStatus,
+                    oldValue: (oldStatus || 'pending') as string,
                     newValue: values.status,
                     metadata: {
                         oldPriority,

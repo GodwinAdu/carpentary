@@ -64,13 +64,6 @@ export function NavMain({ role, user }: NavMainProps) {
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
 
-
-
-
-
-
-
-
   const navMain: (NavItem | false)[] = [
     {
       title: "Overview",
