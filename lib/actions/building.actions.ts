@@ -9,15 +9,29 @@ import { deleteDocument } from "./trash.actions";
 import { createActivity } from "./activity.actions";
 
 interface CreateBuildingProps {
-    image: string;
-    location: { lat: number; lng: number } | null;
+    imgUrls: string[];
+    coordinates: { lat: number; lng: number } | null;
     buildingType: string;
     description: string;
     category: string;
     clientName: string;
     clientEmail: string;
     clientPhone: string;
+    clientCompany?: string;
     address: string;
+    buildingDetails?: {
+        floors?: number;
+        totalArea?: number;
+        yearBuilt?: number;
+        architect?: string;
+        contractor?: string;
+        parkingSpaces?: number;
+    };
+    status?: string;
+    priority?: string;
+    tags?: string[];
+    startDate?: Date;
+    estimatedCompletionDate?: Date;
 }
 
 async function _createBuilding(
@@ -28,21 +42,44 @@ async function _createBuilding(
     try {
         if (!user) throw new Error("User not authenticated");
 
-        const { image, location, buildingType, description, category, clientName, clientEmail, clientPhone, address } = values;
+        const { 
+            imgUrls, 
+            coordinates, 
+            buildingType, 
+            description, 
+            category, 
+            clientName, 
+            clientEmail, 
+            clientPhone, 
+            clientCompany,
+            address,
+            buildingDetails,
+            status,
+            priority,
+            tags,
+            startDate,
+            estimatedCompletionDate
+        } = values;
 
         await connectToDB();
 
         const building = new Building({
-            imgUrls: [image],
-            coordinates: location,
+            imgUrls,
+            coordinates,
             buildingType,
             description,
             category,
             clientName,
             clientEmail,
             clientPhone,
+            clientCompany,
             address,
-            status: "pending", // Default status
+            buildingDetails,
+            status: status || "pending",
+            priority: priority || "medium",
+            tags: tags || [],
+            startDate,
+            estimatedCompletionDate,
             createdBy: user._id,
         });
 
@@ -181,7 +218,11 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
 
         if (!building) throw new Error("Building not found")
 
-        Object.assign(building, values);
+        // Update building with new values
+        Object.assign(building, {
+            ...values,
+            modifyBy: user._id
+        });
 
         const history = new History({
             actionType: 'BUILDING_UPDATED',
@@ -196,8 +237,8 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
         });
 
         await Promise.all([
-            history.save(),
             building.save(),
+            history.save(),
             createActivity({
                 userId: user._id,
                 type: 'building_update',
@@ -206,6 +247,8 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
             })
         ]);
 
+        revalidatePath(path);
+        
         return { success: true, message: "Building updated successfully" };
     } catch (error) {
         console.log("error while updating Building", error)
@@ -277,6 +320,13 @@ interface UpdateQuotationProps {
     accessoriesCost?: number;
     transportationCost?: number;
     roofingType?: string;
+    notes?: string;
+}
+
+interface UpdateStatusProps {
+    buildingId: string;
+    status: string;
+    priority: string;
     notes?: string;
 }
 
@@ -461,6 +511,70 @@ async function _updateBuildingQuotation(user: User, values: UpdateQuotationProps
     }
 }
 
+async function _updateBuildingStatus(user: User, values: UpdateStatusProps) {
+    try {
+        if (!user) throw new Error("User not authenticated");
+
+        await connectToDB();
+
+        const building = await Building.findById(values.buildingId);
+        if (!building) throw new Error("Building not found");
+
+        const oldStatus = building.status;
+        const oldPriority = building.priority;
+
+        // Update status and priority
+        building.status = values.status;
+        building.priority = values.priority;
+        building.modifyBy = user._id;
+
+        // Save building first
+        await building.save();
+
+        // Create history and activity
+        const history = new History({
+            actionType: 'STATUS_UPDATED',
+            details: {
+                itemId: building._id,
+                oldValue: `${oldStatus}/${oldPriority}`,
+                newValue: `${values.status}/${values.priority}`,
+                updatedAt: new Date(),
+            },
+            message: `User ${user.fullName} updated status for building (ID: ${building._id}) from ${oldStatus} to ${values.status} on ${new Date()}.`,
+            performedBy: user._id,
+            entityId: building._id,
+            entityType: 'BUILDING',
+        });
+
+        await Promise.all([
+            history.save(),
+            createActivity({
+                userId: user._id,
+                type: 'status_change',
+                action: `Updated status for building: ${building.buildingType}`,
+                details: {
+                    entityId: building._id,
+                    entityType: 'Building',
+                    oldValue: oldStatus,
+                    newValue: values.status,
+                    metadata: {
+                        oldPriority,
+                        newPriority: values.priority,
+                        notes: values.notes
+                    }
+                }
+            })
+        ]);
+
+        revalidatePath(`/dashboard/buildings/building-list/${values.buildingId}`);
+
+        return { success: true, message: "Status updated successfully" };
+    } catch (error) {
+        console.error("Error updating status:", error);
+        throw error;
+    }
+}
+
 export const createBuilding = await withAuth(_createBuilding)
 export const fetchBuildingById = await withAuth(_fetchBuildingById)
 export const searchBuilding = await withAuth(_searchBuilding)
@@ -470,3 +584,4 @@ export const deleteBuilding = await withAuth(_deleteBuilding)
 export const addComment = await withAuth(_addComment)
 export const addPayment = await withAuth(_addPayment)
 export const updateBuildingQuotation = await withAuth(_updateBuildingQuotation)
+export const updateBuildingStatus = await withAuth(_updateBuildingStatus)

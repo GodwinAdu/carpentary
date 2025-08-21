@@ -42,9 +42,10 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { addComment, addPayment, updateBuildingQuotation } from "@/lib/actions/building.actions"
+import { addComment, addPayment, updateBuildingQuotation, updateBuildingStatus } from "@/lib/actions/building.actions"
 import { fetchAllUsers } from "@/lib/actions/user.actions"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface BuildingDetailPageProps {
     building: any
@@ -88,10 +89,18 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
         notes: building.quotation?.notes || "",
     })
 
+    // Status form state
+    const [statusForm, setStatusForm] = useState({
+        status: building.status || "pending",
+        priority: building.priority || "medium",
+        notes: "",
+    })
+
     // UI state
     const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false)
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
     const [isQuotationDialogOpen, setIsQuotationDialogOpen] = useState(false)
+    const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
 
     // Load users when payment dialog opens
@@ -107,8 +116,8 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
         }
     }
 
-    const paymentProgress = building.totalPaidAmount && building.totalProjectCost 
-        ? (building.totalPaidAmount / building.totalProjectCost) * 100 
+    const paymentProgress = building.totalPaidAmount && building.totalProjectCost
+        ? (building.totalPaidAmount / building.totalProjectCost) * 100
         : 0
 
     const handleNavigate = () => {
@@ -160,7 +169,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                 setIsCommentDialogOpen(false)
                 setSubmitMessage("")
             } catch (error) {
-                toast.error("Error submitting comment. Please try again.")
+                toast.error(error instanceof Error ? error.message : "Error submitting comment. Please try again.")
                 setSubmitMessage("Error submitting comment. Please try again.")
             }
         })
@@ -209,7 +218,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                 setSubmitMessage("")
             } catch (error) {
                 toast.error("Error recording payment. Please try again.")
-                setSubmitMessage("Error recording payment. Please try again.")
+                setSubmitMessage(error instanceof Error ? error.message : "Error recording payment. Please try again.")
             }
         })
     }
@@ -238,20 +247,47 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                 setSubmitMessage("")
                 router.refresh()
             } catch (error) {
-                toast.error("Error updating quotation. Please try again.")
+                toast.error(error instanceof Error ? error.message : "Error updating quotation. Please try again.")
                 setSubmitMessage("Error updating quotation. Please try again.")
             }
         })
     }
 
+    const handleUpdateStatus = async () => {
+        startTransition(async () => {
+            try {
+                await updateBuildingStatus({
+                    buildingId: building._id,
+                    status: statusForm.status,
+                    priority: statusForm.priority,
+                    notes: statusForm.notes,
+                })
+
+                toast.success("Status updated successfully!")
+                setIsStatusDialogOpen(false)
+                setSubmitMessage("")
+                router.refresh()
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Error updating status. Please try again.")
+                setSubmitMessage("Error updating status. Please try again.")
+            }
+        })
+    }
+
     const getStatusColor = (status: string) => {
-        const colors = {
-            completed: "bg-green-500",
-            in_progress: "bg-blue-500",
-            pending: "bg-yellow-500",
-            failed: "bg-red-500",
+        const colors: Record<string, string> = {
+            pending: "bg-gray-400",             // Neutral waiting
+            quotation_sent: "bg-indigo-500",    // Business/proposal sent
+            deal_closed: "bg-blue-600",         // Strong success indicator
+            partially_paid: "bg-amber-500",     // Warning but positive
+            fully_paid: "bg-emerald-600",       // Solid success
+            in_progress: "bg-sky-500",          // Active state
+            completed: "bg-green-600",          // Done, positive
+            cancelled: "bg-red-600",            // Negative
+            archived: "bg-slate-500",           // Muted, inactive
         }
-        return colors[status as keyof typeof colors] || "bg-gray-500"
+
+        return colors[status] || "bg-gray-500"
     }
 
     const getPaymentMethodIcon = (method: string) => {
@@ -362,6 +398,120 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6">
+                                {/* Project Status Update */}
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">Project Status</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Update project status and priority level
+                                        </p>
+                                    </div>
+                                    <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button>
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Update Status
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Update Project Status</DialogTitle>
+                                                <DialogDescription>
+                                                    Change the current status and priority of this roofing project
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="space-y-4">
+                                                {submitMessage && (
+                                                    <Alert>
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertDescription>{submitMessage}</AlertDescription>
+                                                    </Alert>
+                                                )}
+
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Project Status *</label>
+                                                    <Select value={statusForm.status} onValueChange={(value) => setStatusForm({ ...statusForm, status: value })}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select project status" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="pending">Pending</SelectItem>
+                                                            <SelectItem value="quotation_sent">Quotation</SelectItem>
+                                                            <SelectItem value="deal_closed">Deal Closed</SelectItem>
+                                                            <SelectItem value="partially_paid">Partially Paid</SelectItem>
+                                                            <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                                                            <SelectItem value="in_progress">In Progress</SelectItem>
+                                                            <SelectItem value="completed">Completed</SelectItem>
+                                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                            <SelectItem value="archived">Archived</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Priority Level *</label>
+                                                    <Select value={statusForm.priority} onValueChange={(value) => setStatusForm({ ...statusForm, priority: value })}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select priority level" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="low">Low</SelectItem>
+                                                            <SelectItem value="medium">Medium</SelectItem>
+                                                            <SelectItem value="high">High</SelectItem>
+                                                            <SelectItem value="urgent">Urgent</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Status Notes</label>
+                                                    <Textarea
+                                                        placeholder="Add notes about this status change..."
+                                                        value={statusForm.notes}
+                                                        onChange={(e) => setStatusForm({ ...statusForm, notes: e.target.value })}
+                                                        rows={3}
+                                                    />
+                                                </div>
+
+                                                <div className="flex gap-2 pt-4">
+                                                    <Button onClick={handleUpdateStatus} disabled={isPending} className="flex-1">
+                                                        {isPending ? "Updating..." : "Update Status"}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setIsStatusDialogOpen(false)}
+                                                        disabled={isPending}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+
+                                {/* Current Status Display */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Current Status</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className={cn(getStatusColor(building.status),`p-3 py-1`)}>
+                                                    {building.status?.replace('_', ' ').toUpperCase()}
+                                                </Badge>
+                                                <Badge variant="secondary" className="px-3 py-1">
+                                                    {building.priority?.toUpperCase()} PRIORITY
+                                                </Badge>
+                                            </div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                Last updated: {new Date(building.updatedAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                                 {/* Main Image */}
                                 <Card>
                                     <CardContent className="p-0">
@@ -385,7 +535,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                     <CardHeader>
                                         <CardTitle>Payment Progress</CardTitle>
                                         <CardDescription>
-                                            ${building.totalPaidAmount.toLocaleString()} of $
+                                            ₵{building.totalPaidAmount.toLocaleString()} of ₵
                                             {(building.totalProjectCost || 0).toLocaleString()} paid
                                         </CardDescription>
                                     </CardHeader>
@@ -453,15 +603,6 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                             {building.status}
                                                         </Badge>
                                                     </div>
-                                                </div>
-
-                                                <h4 className="font-semibold mb-2 mt-4">Amenities</h4>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {building.buildingDetails?.amenities?.map((amenity: string, index: number) => (
-                                                        <Badge key={index} variant="secondary" className="text-xs">
-                                                            {amenity}
-                                                        </Badge>
-                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -640,7 +781,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">Outstanding Balance</p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="mt-6">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="text-sm font-medium">Payment Progress</span>
@@ -738,88 +879,6 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                     </p>
                                                 </div>
                                             )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Roofing Timeline */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Roofing Installation Timeline</CardTitle>
-                                        <CardDescription>Estimated roofing project phases and milestones</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
-                                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                                <div className="flex-1">
-                                                    <p className="font-medium">Site Assessment</p>
-                                                    <p className="text-sm text-gray-600">Roof inspection, measurements, material planning</p>
-                                                </div>
-                                                <Badge variant="secondary">Completed</Badge>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
-                                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                                <div className="flex-1">
-                                                    <p className="font-medium">Material Procurement</p>
-                                                    <p className="text-sm text-gray-600">Sourcing and delivery of roofing materials</p>
-                                                </div>
-                                                <Badge>In Progress</Badge>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
-                                                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                                                <div className="flex-1">
-                                                    <p className="font-medium">Roof Installation</p>
-                                                    <p className="text-sm text-gray-600">Installing roofing materials and accessories</p>
-                                                </div>
-                                                <Badge variant="outline">Pending</Badge>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-4 p-3 border rounded-lg">
-                                                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                                                <div className="flex-1">
-                                                    <p className="font-medium">Final Inspection</p>
-                                                    <p className="text-sm text-gray-600">Quality check and project completion</p>
-                                                </div>
-                                                <Badge variant="outline">Pending</Badge>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Roofing Terms & Conditions */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Roofing Terms & Conditions</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3 text-sm">
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                                <p>Payment schedule: 50% upfront for materials, 50% on installation completion</p>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                                <p>All roofing materials included as per specifications</p>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                                <p>24-month warranty on roofing materials and installation</p>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                                <p>Free maintenance check after 6 months</p>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                                <p>Weather-resistant installation guarantee</p>
-                                            </div>
-                                            <div className="flex items-start gap-2">
-                                                <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5" />
-                                                <p>Additional costs may apply for structural repairs or modifications</p>
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>

@@ -84,6 +84,7 @@ const actionTypes = [
 
     'COMMENT_ADDED',
     'PAYMENT_ADDED',
+    'STATUS_UPDATED',
 
     
 

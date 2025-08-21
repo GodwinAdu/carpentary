@@ -105,7 +105,6 @@ const BuildingSchema = new Schema(
             architect: { type: String },
             contractor: { type: String },
             parkingSpaces: { type: Number },
-            amenities: [String],
             roofArea: { type: Number }, // in sq ft - specific for roofing business
             roofPitch: { type: String }, // roof slope/pitch
             existingRoofType: { type: String }, // current roof type if replacement
@@ -128,9 +127,8 @@ const BuildingSchema = new Schema(
             type: String,
             enum: [
                 "pending",
-                "under_review",
-                "approved",
-                "payment_started",
+                "quotation_sent",
+                "deal_closed",
                 "partially_paid",
                 "fully_paid",
                 "in_progress",

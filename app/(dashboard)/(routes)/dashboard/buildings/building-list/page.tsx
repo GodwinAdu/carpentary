@@ -17,15 +17,19 @@ export default async function BuildingsPage() {
   const totalComments = buildings.reduce((sum, b) => sum + (b.comments?.length || 0), 0)
 
   const getStatusColor = (status: string) => {
-    const colors = {
-      completed: "bg-green-500",
-      in_progress: "bg-blue-500",
-      fully_paid: "bg-emerald-500",
-      partially_paid: "bg-yellow-500",
-      pending: "bg-gray-500",
-      cancelled: "bg-red-500",
+    const colors: Record<string, string> = {
+      pending: "bg-gray-400",             // Neutral waiting
+      quotation_sent: "bg-indigo-500",    // Business/proposal sent
+      deal_closed: "bg-blue-600",         // Strong success indicator
+      partially_paid: "bg-amber-500",     // Warning but positive
+      fully_paid: "bg-emerald-600",       // Solid success
+      in_progress: "bg-sky-500",          // Active state
+      completed: "bg-green-600",          // Done, positive
+      cancelled: "bg-red-600",            // Negative
+      archived: "bg-slate-500",           // Muted, inactive
     }
-    return colors[status as keyof typeof colors] || "bg-gray-500"
+
+    return colors[status] || "bg-gray-500"
   }
 
   const getPriorityColor = (priority: string) => {

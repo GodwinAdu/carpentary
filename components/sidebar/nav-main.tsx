@@ -276,6 +276,7 @@ export function NavMain({ role, user }: NavMainProps) {
       url: `/dashboard/report`,
       icon: LucideAlignVerticalJustifyCenter,
       isActive: false,
+      roleField: "report",
     },
     user.role === "admin" && {
       title: "History",

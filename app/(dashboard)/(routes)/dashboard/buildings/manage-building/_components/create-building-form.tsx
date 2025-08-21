@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Camera,
   MapPin,
@@ -18,7 +17,6 @@ import {
   Plus,
   X,
   Building2,
-  DollarSign,
   Calendar,
   Users,
 } from "lucide-react"
@@ -72,9 +70,8 @@ const buildingTypes = [
 
 const statusOptions = [
   { label: "Pending", value: "pending" },
-  { label: "Under Review", value: "under_review" },
-  { label: "Approved", value: "approved" },
-  { label: "Payment Started", value: "payment_started" },
+  { label: "Quotation", value: "quotation_sent" },
+  { label: "Deal Closed", value: "deal_closed" },
   { label: "Partially Paid", value: "partially_paid" },
   { label: "Fully Paid", value: "fully_paid" },
   { label: "In Progress", value: "in_progress" },
@@ -90,25 +87,6 @@ const priorityOptions = [
   { label: "Urgent", value: "urgent" },
 ]
 
-const commonAmenities = [
-  "Parking",
-  "Elevator",
-  "Security",
-  "Air Conditioning",
-  "Heating",
-  "WiFi",
-  "Gym/Fitness Center",
-  "Swimming Pool",
-  "Cafeteria",
-  "Conference Rooms",
-  "Reception/Lobby",
-  "Backup Generator",
-  "Fire Safety System",
-  "CCTV",
-  "Wheelchair Accessible",
-  "Balcony/Terrace",
-  "Garden/Landscaping",
-]
 
 export default function CapturePage({ type, initialData }: { type: "create" | "update"; initialData?: any }) {
   // Existing state
@@ -127,8 +105,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
   const [clientPhone, setClientPhone] = useState("")
   const [clientCompany, setClientCompany] = useState("") // New field
 
-  // Financial Information - New fields
-  const [totalProjectCost, setTotalProjectCost] = useState("")
 
   // Building Details - New fields
   const [floors, setFloors] = useState("")
@@ -137,7 +113,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
   const [architect, setArchitect] = useState("")
   const [contractor, setContractor] = useState("")
   const [parkingSpaces, setParkingSpaces] = useState("")
-  const [amenities, setAmenities] = useState<string[]>([])
+
 
   // Project Management - New fields
   const [status, setStatus] = useState("pending")
@@ -166,8 +142,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
       setClientPhone(initialData.clientPhone || "")
       setClientCompany(initialData.clientCompany || "")
 
-      // Financial
-      setTotalProjectCost(initialData.totalProjectCost?.toString() || "")
 
       // Building details
       setFloors(initialData.buildingDetails?.floors?.toString() || "")
@@ -176,7 +150,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
       setArchitect(initialData.buildingDetails?.architect || "")
       setContractor(initialData.buildingDetails?.contractor || "")
       setParkingSpaces(initialData.buildingDetails?.parkingSpaces?.toString() || "")
-      setAmenities(initialData.buildingDetails?.amenities || [])
+
 
       // Project management
       setStatus(initialData.status || "pending")
@@ -237,9 +211,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
     )
   }, [])
 
-  const handleAmenityToggle = (amenity: string) => {
-    setAmenities((prev) => (prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]))
-  }
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -254,9 +225,9 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
 
   const handleSave = async () => {
     // Enhanced validation
-    if (imageUrls.length === 0 || !location || !buildingType.trim() || !totalProjectCost.trim()) {
+    if (imageUrls.length === 0 || !location || !buildingType.trim()) {
       toast.error("Missing Required Information", {
-        description: "Please capture at least one image, get location, enter building type, and project cost",
+        description: "Please capture at least one image, get location, and  enter building type",
       })
       return
     }
@@ -284,9 +255,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
         clientPhone,
         clientCompany,
 
-        // Financial Information
-        totalProjectCost: Number.parseFloat(totalProjectCost),
-
         // Building Details
         buildingDetails: {
           floors: floors ? Number.parseInt(floors) : undefined,
@@ -295,7 +263,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
           architect,
           contractor,
           parkingSpaces: parkingSpaces ? Number.parseInt(parkingSpaces) : undefined,
-          amenities,
         },
 
         // Project Management
@@ -323,14 +290,12 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
         setClientEmail("")
         setClientPhone("")
         setClientCompany("")
-        setTotalProjectCost("")
         setFloors("")
         setTotalArea("")
         setYearBuilt("")
         setArchitect("")
         setContractor("")
         setParkingSpaces("")
-        setAmenities([])
         setStatus("pending")
         setPriority("medium")
         setTags([])
@@ -617,32 +582,10 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
               </CardContent>
             </Card>
 
-            {/* Financial Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2" />
-                  Financial Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="totalProjectCost">Total Project Cost *</Label>
-                  <Input
-                    id="totalProjectCost"
-                    type="number"
-                    placeholder="Enter total project cost"
-                    value={totalProjectCost}
-                    onChange={(e) => setTotalProjectCost(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Building Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Building Specifications</CardTitle>
+                <CardTitle>Building Specifications (Optional)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -712,25 +655,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
                       value={contractor}
                       onChange={(e) => setContractor(e.target.value)}
                     />
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div className="space-y-2">
-                  <Label>Amenities</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {commonAmenities.map((amenity) => (
-                      <div key={amenity} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={amenity}
-                          checked={amenities.includes(amenity)}
-                          onCheckedChange={() => handleAmenityToggle(amenity)}
-                        />
-                        <Label htmlFor={amenity} className="text-sm">
-                          {amenity}
-                        </Label>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </CardContent>
@@ -815,8 +739,9 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
                 imageUrls.length === 0 ||
                 !location ||
                 !buildingType.trim() ||
-                !totalProjectCost.trim() ||
                 !clientName.trim() ||
+                !startDate ||
+                !estimatedCompletionDate ||
                 isSaving
               }
               className="w-full"

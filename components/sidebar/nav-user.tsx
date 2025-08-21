@@ -77,7 +77,7 @@ export function NavUser() {
                   <AvatarFallback className="rounded-lg">ST</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Store name</span>
+                  <span className="truncate font-semibold">GML Roofing</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -87,13 +87,13 @@ export function NavUser() {
                 <ModeToggle />
                 <p className="font-extrabold">Theme</p>
               </div>
-              <Link href={`/keyboard-shortcuts`}>
+              <Link href={`#`}>
                 <DropdownMenuItem>
                   <Keyboard />
                   Keyboard shortcuts
                 </DropdownMenuItem>
               </Link>
-              <Link href={`/school-settings`}>
+              <Link href={`#`}>
                 <DropdownMenuItem>
                   <Settings />
                   Store Settings
