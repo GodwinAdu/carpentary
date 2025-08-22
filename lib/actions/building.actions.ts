@@ -99,7 +99,7 @@ async function _createBuilding(
             building.save(),
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_create',
                 action: `Created new building: ${buildingType}`,
                 details: { entityId: building._id, entityType: 'Building' }
@@ -125,7 +125,7 @@ async function _fetchBuildingById(user: User, id: string) {
         if (!building) throw new Error("Building not found");
 
         await createActivity({
-            userId: user._id,
+            userId: user._id as string,
             type: 'building_access',
             action: `Viewed building: ${building.buildingType}`,
             details: { entityId: id, entityType: 'Building' }
@@ -208,7 +208,7 @@ async function _fetchAllBuilding(user: User) {
 };
 
 
-async function _updateBuilding(user: User, id: string, values: CreateBuildingProps) {
+async function _updateBuilding(user: User, id: string, values: CreateBuildingProps,path:string) {
     try {
         if (!user) throw new Error("User not authenticated")
 
@@ -240,7 +240,7 @@ async function _updateBuilding(user: User, id: string, values: CreateBuildingPro
             building.save(),
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_update',
                 action: `Updated building: ${building.buildingType}`,
                 details: { entityId: id, entityType: 'Building' }
@@ -274,7 +274,7 @@ async function _deleteBuilding(user: User, id: string) {
                 historyMessage: `User ${user.fullName} deleted Building with (ID: ${id}) on ${new Date().toLocaleString()}.`
             }),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_access',
                 action: `Deleted building: ${building.buildingType}`,
                 details: { entityId: id, entityType: 'Building' }
@@ -315,6 +315,8 @@ interface AddPaymentProps {
 interface UpdateQuotationProps {
     buildingId: string;
     totalProjectCost: number;
+    startDate: Date;
+    estimatedCompletionDate: Date;
     materialsCost?: number;
     laborCost?: number;
     accessoriesCost?: number;

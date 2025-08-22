@@ -49,7 +49,7 @@ export default async function BuildingsPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" asChild className="mr-4">
-              <Link href="/">
+              <Link href="/dashboard/buildings/building-list">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
@@ -58,9 +58,7 @@ export default async function BuildingsPage() {
               <p className="text-gray-600 dark:text-gray-400">Comprehensive building management and analytics</p>
             </div>
           </div>
-          <Button asChild>
-            <Link href="/dashboard/buildings/new">Add New Building</Link>
-          </Button>
+         
         </div>
 
         {/* Enhanced Stats Cards */}

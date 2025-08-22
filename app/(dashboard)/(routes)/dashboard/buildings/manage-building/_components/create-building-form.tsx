@@ -68,17 +68,17 @@ const buildingTypes = [
   "Agricultural Barn",
 ]
 
-const statusOptions = [
-  { label: "Pending", value: "pending" },
-  { label: "Quotation", value: "quotation_sent" },
-  { label: "Deal Closed", value: "deal_closed" },
-  { label: "Partially Paid", value: "partially_paid" },
-  { label: "Fully Paid", value: "fully_paid" },
-  { label: "In Progress", value: "in_progress" },
-  { label: "Completed", value: "completed" },
-  { label: "Cancelled", value: "cancelled" },
-  { label: "Archived", value: "archived" },
-]
+// const statusOptions = [
+//   { label: "Pending", value: "pending" },
+//   { label: "Quotation", value: "quotation_sent" },
+//   { label: "Deal Closed", value: "deal_closed" },
+//   { label: "Partially Paid", value: "partially_paid" },
+//   { label: "Fully Paid", value: "fully_paid" },
+//   { label: "In Progress", value: "in_progress" },
+//   { label: "Completed", value: "completed" },
+//   { label: "Cancelled", value: "cancelled" },
+//   { label: "Archived", value: "archived" },
+// ]
 
 const priorityOptions = [
   { label: "Low", value: "low" },
@@ -116,12 +116,9 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
 
 
   // Project Management - New fields
-  const [status, setStatus] = useState("pending")
   const [priority, setPriority] = useState("medium")
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
-  const [startDate, setStartDate] = useState("")
-  const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("")
 
   const path = usePathname()
   const router = useRouter()
@@ -153,15 +150,8 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
 
 
       // Project management
-      setStatus(initialData.status || "pending")
       setPriority(initialData.priority || "medium")
       setTags(initialData.tags || [])
-      setStartDate(initialData.startDate ? new Date(initialData.startDate).toISOString().split("T")[0] : "")
-      setEstimatedCompletionDate(
-        initialData.estimatedCompletionDate
-          ? new Date(initialData.estimatedCompletionDate).toISOString().split("T")[0]
-          : "",
-      )
     }
   }, [type, initialData])
 
@@ -225,20 +215,12 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
 
   const handleSave = async () => {
     // Enhanced validation
-    if (imageUrls.length === 0 || !location || !buildingType.trim()) {
+    if (imageUrls.length === 0 || !location || !buildingType.trim() || !description.trim()) {
       toast.error("Missing Required Information", {
-        description: "Please capture at least one image, get location, and  enter building type",
+        description: "Please capture at least one image, get location, and enter building type and description",
       })
       return
     }
-
-    if (!clientName.trim()) {
-      toast.error("Missing Client Information", {
-        description: "Client name is required",
-      })
-      return
-    }
-
     setIsSaving(true)
     try {
       const values = {
@@ -266,11 +248,8 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
         },
 
         // Project Management
-        status,
         priority,
         tags,
-        startDate: startDate ? new Date(startDate) : undefined,
-        estimatedCompletionDate: estimatedCompletionDate ? new Date(estimatedCompletionDate) : undefined,
       }
 
       if (type === "create") {
@@ -296,11 +275,8 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
         setArchitect("")
         setContractor("")
         setParkingSpaces("")
-        setStatus("pending")
         setPriority("medium")
         setTags([])
-        setStartDate("")
-        setEstimatedCompletionDate("")
       } else {
         await updateBuilding(initialData._id, values)
         toast.success("Building updated successfully!", {
@@ -491,22 +467,7 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Project Status</Label>
-                    <Select onValueChange={setStatus} value={status}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
+                  
                   <div className="space-y-2">
                     <Label htmlFor="priority">Priority</Label>
                     <Select onValueChange={setPriority} value={priority}>
@@ -660,39 +621,6 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
               </CardContent>
             </Card>
 
-            {/* Project Timeline */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Project Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="estimatedCompletionDate">Estimated Completion</Label>
-                    <Input
-                      id="estimatedCompletionDate"
-                      type="date"
-                      value={estimatedCompletionDate}
-                      onChange={(e) => setEstimatedCompletionDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Tags */}
             <Card>
               <CardHeader>
@@ -738,10 +666,8 @@ export default function CapturePage({ type, initialData }: { type: "create" | "u
               disabled={
                 imageUrls.length === 0 ||
                 !location ||
+                !description.trim() ||
                 !buildingType.trim() ||
-                !clientName.trim() ||
-                !startDate ||
-                !estimatedCompletionDate ||
                 isSaving
               }
               className="w-full"

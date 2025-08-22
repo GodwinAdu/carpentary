@@ -38,6 +38,7 @@ import {
     CheckCircle,
     AlertCircle,
     Upload,
+    X,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -46,6 +47,7 @@ import { addComment, addPayment, updateBuildingQuotation, updateBuildingStatus }
 import { fetchAllUsers } from "@/lib/actions/user.actions"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { ImageUploader } from "@/components/commons/ImageUpload"
 
 interface BuildingDetailPageProps {
     building: any
@@ -102,6 +104,9 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
     const [isQuotationDialogOpen, setIsQuotationDialogOpen] = useState(false)
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
+    const [startDate, setStartDate] = useState("")
+    const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("")
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     // Load users when payment dialog opens
     const handlePaymentDialogOpen = async (open: boolean) => {
@@ -232,6 +237,8 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
         startTransition(async () => {
             try {
                 await updateBuildingQuotation({
+                    startDate,
+                    estimatedCompletionDate,
                     buildingId: building._id,
                     totalProjectCost: Number.parseFloat(quotationForm.totalProjectCost),
                     materialsCost: quotationForm.materialsCost ? Number.parseFloat(quotationForm.materialsCost) : undefined,
@@ -308,7 +315,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center">
                         <Button variant="ghost" size="icon" asChild className="mr-4">
-                            <Link href="/dashboard/buildings">
+                            <Link href="/dashboard/buildings/building-list">
                                 <ArrowLeft className="h-4 w-4" />
                             </Link>
                         </Button>
@@ -499,7 +506,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                     <CardContent>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <Badge variant="outline" className={cn(getStatusColor(building.status),`p-3 py-1`)}>
+                                                <Badge variant="outline" className={cn(getStatusColor(building.status), `p-3 py-1`)}>
                                                     {building.status?.replace('_', ' ').toUpperCase()}
                                                 </Badge>
                                                 <Badge variant="secondary" className="px-3 py-1">
@@ -626,7 +633,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                 Update Quotation
                                             </Button>
                                         </DialogTrigger>
-                                        <DialogContent className="max-w-3xl">
+                                        <DialogContent className="md:max-w-3xl h-[95%] overflow-auto">
                                             <DialogHeader>
                                                 <DialogTitle>Update Project Quotation</DialogTitle>
                                                 <DialogDescription>
@@ -734,6 +741,37 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                         Current: ₵{(building.totalProjectCost || 0).toLocaleString()}
                                                     </div>
                                                 </div>
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle className="flex items-center">
+                                                            <Calendar className="h-5 w-5 mr-2" />
+                                                            Project Timeline
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="startDate">Start Date</Label>
+                                                                <Input
+                                                                    id="startDate"
+                                                                    type="date"
+                                                                    value={startDate}
+                                                                    onChange={(e) => setStartDate(e.target.value)}
+                                                                />
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="estimatedCompletionDate">Estimated Completion</Label>
+                                                                <Input
+                                                                    id="estimatedCompletionDate"
+                                                                    type="date"
+                                                                    value={estimatedCompletionDate}
+                                                                    onChange={(e) => setEstimatedCompletionDate(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
 
                                                 <div className="flex gap-2 pt-4">
                                                     <Button onClick={handleUpdateQuotation} disabled={isPending} className="flex-1">
@@ -1169,13 +1207,10 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
 
                                                 <div>
                                                     <label className="block text-sm font-medium mb-2">Add Photos (Optional)</label>
-                                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                                                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                            Click to upload photos or drag and drop
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB each</p>
-                                                    </div>
+                                                    <ImageUploader
+                                                        value={commentForm.images}
+                                                        onChange={(urls) => setCommentForm({ ...commentForm, images: urls })}
+                                                    />
                                                 </div>
 
                                                 <div className="flex gap-2 pt-4">
@@ -1244,6 +1279,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                                                         alt={`Review image ${index + 1}`}
                                                                         fill
                                                                         className="object-cover hover:scale-105 transition-transform cursor-pointer"
+                                                                        onClick={() => setSelectedImage(image)}
                                                                     />
                                                                 </div>
                                                             ))}
@@ -1416,6 +1452,29 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                     </div>
                 </div>
             </div>
+
+            {/* Image Modal */}
+            <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                <DialogContent className="max-w-4xl p-0">
+                    <div className="relative">
+                        <Image
+                            src={selectedImage || ""}
+                            alt="Large view"
+                            width={800}
+                            height={600}
+                            className="w-full h-auto rounded-lg"
+                        />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                            onClick={() => setSelectedImage(null)}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

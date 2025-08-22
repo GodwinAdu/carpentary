@@ -7,9 +7,9 @@ const CommentSchema = new Schema(
             ref: "User",
             required: true,
         },
-        userName: { type: String, required: true },
-        userEmail: { type: String, required: true },
-        comment: { type: String, required: true },
+        userName: { type: String },
+        userEmail: { type: String },
+        comment: { type: String },
         rating: {
             type: Number,
             min: 1,
@@ -31,7 +31,7 @@ const PaymentSchema = new Schema(
         currency: { type: String, default: "USD" },
         paymentMethod: {
             type: String,
-            enum: ["cash","mobile_money", "bank_transfer", "credit_card", "check", "digital_wallet"],
+            enum: ["cash", "mobile_money", "bank_transfer", "credit_card", "check", "digital_wallet"],
             required: true,
         },
         transactionId: { type: String },
@@ -57,7 +57,7 @@ const PaymentSchema = new Schema(
 
 const QuotationSchema = new Schema(
     {
-        totalProjectCost: { type: Number, required: true },
+        totalProjectCost: { type: Number },
         materialsCost: { type: Number },
         laborCost: { type: Number },
         accessoriesCost: { type: Number },
@@ -89,10 +89,10 @@ const BuildingSchema = new Schema(
             type: String,
         },
         buildingType: { type: String, required: true },
-        description: { type: String },
+        description: { type: String, required: true },
 
         // Client Information
-        clientName: { type: String, required: true },
+        clientName: { type: String},
         clientEmail: { type: String },
         clientPhone: { type: String },
         clientCompany: { type: String },

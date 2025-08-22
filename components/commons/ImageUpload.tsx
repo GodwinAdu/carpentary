@@ -9,8 +9,9 @@ import { UploadCloud, File, X } from 'lucide-react'
 import { ControllerRenderProps } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { toast } from "@/hooks/use-toast"
+
 import Image from "next/image"
+import { toast } from "sonner"
 
 interface ImageUploaderProps extends ControllerRenderProps {
   label?: string
@@ -37,18 +38,11 @@ export function ImageUploader({ onChange, value, }: ImageUploaderProps) {
         onChange(uploadedUrls)
         setFiles([])
         setUploadProgress({})
-        toast({
-          title: "Success",
-          description: `Uploaded ${res.length} ${res.length === 1 ? 'file' : 'files'}`,
-        })
+        toast.success(`Uploaded ${res.length} ${res.length === 1 ? 'file' : 'files'}`)
       }
     },
     onUploadError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Error occurred while uploading",
-        variant: "destructive",
-      })
+      toast.error(`Upload Failed: ${error.message || "Error occurred while uploading"}`)
       setUploadProgress({})
     },
   })
