@@ -1,5 +1,47 @@
 import { Schema, model, models, Model } from "mongoose";
 
+// Define the IRole interface
+interface IRole {
+    _id?: string
+    name: string
+    displayName: string
+    description?: string
+    permissions: {
+        manageAccess: boolean
+        dashboard: boolean
+        map: boolean
+        buildingTracking: boolean
+        liveTracking: boolean
+        hrManagement: boolean
+        myTodo: boolean
+        report: boolean
+        addBuilding: boolean
+        manageBuilding: boolean
+        viewBuilding: boolean
+        editBuilding: boolean
+        deleteBuilding: boolean
+        addHr: boolean
+        viewHr: boolean
+        editHr: boolean
+        deleteHr: boolean
+        manageHr: boolean
+        addRole: boolean
+        viewRole: boolean
+        editRole: boolean
+        deleteRole: boolean
+        manageRole: boolean
+        hrReport: boolean
+        balanceSheet: boolean
+        trialBalance: boolean
+        cashFlow: boolean
+    }
+    userCount?: Schema.Types.ObjectId[]
+    createdBy?: Schema.Types.ObjectId
+    modifyBy?: Schema.Types.ObjectId
+    deletedBy?: Schema.Types.ObjectId
+    action_type?: string
+}
+
 // Define the Role schema
 const RoleSchema: Schema<IRole> = new Schema({
     name: {
@@ -22,7 +64,7 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
-        map:{
+        map: {
             type: Boolean,
             default: false,
         },
@@ -38,7 +80,7 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
-        account: {
+        myTodo: {
             type: Boolean,
             default: false,
         },
@@ -46,7 +88,6 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
-
         addBuilding: {
             type: Boolean,
             default: false,
@@ -55,7 +96,7 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
-        viewBuilding: { 
+        viewBuilding: {
             type: Boolean,
             default: false,
         },
@@ -67,52 +108,6 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false,
         },
-
-        addExpenses: {
-            type: Boolean,
-            default: false,
-        },
-        manageExpenses: {
-            type: Boolean,
-            default: false,
-        },
-        viewExpenses: {
-            type: Boolean,
-            default: false,
-        },
-        editExpenses: {
-            type: Boolean,
-            default: false,
-        },
-        deleteExpenses: {
-            type: Boolean,
-            default: false,
-        },
-        listExpenses: {
-            type: Boolean,
-            default: false
-        },
-        addListAccount: {
-            type: Boolean,
-            default: false,
-        },
-        manageListAccount: {
-            type: Boolean,
-            default: false,
-        },
-        viewListAccount: {
-            type: Boolean,
-            default: false,
-        },
-        editListAccount: {
-            type: Boolean,
-            default: false,
-        },
-        deleteListAccount: {
-            type: Boolean,
-            default: false,
-        },
-        // HR Access
         addHr: {
             type: Boolean,
             default: false
@@ -133,73 +128,26 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false
         },
-
-        // Request Salary Access
-        addRequestSalary: {
+        addRole: {
             type: Boolean,
             default: false
         },
-        viewRequestSalary: {
+        viewRole: {
             type: Boolean,
             default: false
         },
-        editRequestSalary: {
+        editRole: {
             type: Boolean,
             default: false
         },
-        deleteRequestSalary: {
+        deleteRole: {
             type: Boolean,
             default: false
         },
-        manageRequestSalary: {
+        manageRole: {
             type: Boolean,
             default: false
         },
-
-        // Request Leave Access
-        addRequestLeave: {
-            type: Boolean,
-            default: false
-        },
-        viewRequestLeave: {
-            type: Boolean,
-            default: false
-        },
-        editRequestLeave: {
-            type: Boolean,
-            default: false
-        },
-        deleteRequestLeave: {
-            type: Boolean,
-            default: false
-        },
-        manageRequestLeave: {
-            type: Boolean,
-            default: false
-        },
-
-        // Leave Category Access
-        addLeaveCategory: {
-            type: Boolean,
-            default: false
-        },
-        viewLeaveCategory: {
-            type: Boolean,
-            default: false
-        },
-        editLeaveCategory: {
-            type: Boolean,
-            default: false
-        },
-        deleteLeaveCategory: {
-            type: Boolean,
-            default: false
-        },
-        manageLeaveCategory: {
-            type: Boolean,
-            default: false
-        },
-
         hrReport: {
             type: Boolean,
             default: false
@@ -215,84 +163,12 @@ const RoleSchema: Schema<IRole> = new Schema({
         cashFlow: {
             type: Boolean,
             default: false
-        },
-        paymentAccountReport: {
-            type: Boolean,
-            default: false
-        },
-        profitLostReport: {
-            type: Boolean,
-            default: false
-        },
-        itemsReport: {
-            type: Boolean,
-            default: false
-        },
-        registerReport: {
-            type: Boolean,
-            default: false
-        },
-        expensesReport: {
-            type: Boolean,
-            default: false
-        },
-        productSellReport: {
-            type: Boolean,
-            default: false
-        },
-        productPurchaseReport: {
-            type: Boolean,
-            default: false
-        },
-        sellReturnReport: {
-            type: Boolean,
-            default: false
-        },
-        purchaseReturnReport: {
-            type: Boolean,
-            default: false
-        },
-        stockTransferReport: {
-            type: Boolean,
-            default: false
-        },
-        stockAdjustmentReport: {
-            type: Boolean,
-            default: false
-        },
-        salesReport: {
-            type: Boolean,
-            default: false
-        },
-        purchaseReport: {
-            type: Boolean,
-            default: false
-        },
-        trendingProductReport: {
-            type: Boolean,
-            default: false
-        },
-        stockExpiryReport: {
-            type: Boolean,
-            default: false
-        },
-        stockReport: {
-            type: Boolean,
-            default: false
-        },
-        taxReport: {
-            type: Boolean,
-            default: false
-        },
-        saleRepresentativeReport: {
-            type: Boolean,
-            default: false
-        },
-        customerSupplierReport: {
-            type: Boolean,
-            default: false
-        },
+        }
     },
+    userCount: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }],
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: "User",

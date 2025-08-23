@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache";
 import { User, withAuth } from "../helpers/auth";
 import Role from "../models/role.models";
 import { connectToDB } from "../mongoose";
@@ -8,10 +9,38 @@ interface RoleValues {
     name: string;
     displayName: string;
     description: string;
-    permissions: string[];
+    permissions: {
+        manageAccess: boolean;
+        dashboard: boolean;
+        map: boolean;
+        buildingTracking: boolean;
+        liveTracking: boolean;
+        hrManagement: boolean;
+        myTodo: boolean;
+        report: boolean;
+        addBuilding: boolean;
+        manageBuilding: boolean;
+        viewBuilding: boolean;
+        editBuilding: boolean;
+        deleteBuilding: boolean;
+        addHr: boolean;
+        viewHr: boolean;
+        editHr: boolean;
+        deleteHr: boolean;
+        manageHr: boolean;
+        addRole: boolean;
+        viewRole: boolean;
+        editRole: boolean;
+        deleteRole: boolean;
+        manageRole: boolean;
+        hrReport: boolean;
+        balanceSheet: boolean;
+        trialBalance: boolean;
+        cashFlow: boolean;
+    };
 }
 
-async function _createRole(user: User, values: RoleValues) {
+async function _createRole(user: User, values: RoleValues, path: string) {
     try {
         if (!user) {
             throw new Error("User not authenticated");
@@ -30,6 +59,8 @@ async function _createRole(user: User, values: RoleValues) {
         });
 
         await newRole.save();
+
+        revalidatePath(path)
 
         console.log("Role created successfully:", newRole);
 
@@ -61,6 +92,9 @@ async function _fetchAllRoles(user: User) {
 
 async function _fetchRole(user: User, value: string) {
     try {
+        if (!user) {
+            throw new Error("User not authenticated");
+        }
 
         const schoolId = user.schoolId
         await connectToDB();
@@ -100,7 +134,7 @@ async function _fetchRoleById<T>(user: User, roleId: string): Promise<T> {
     }
 }
 
-async function _updateRole(user: User, roleId: string, values: RoleValues) {
+async function _updateRole(user: User, roleId: string, values: RoleValues, path: string) {
     try {
         if (!user) {
             throw new Error("User not authenticated");
@@ -119,6 +153,7 @@ async function _updateRole(user: User, roleId: string, values: RoleValues) {
         role.permissions = values.permissions;
 
         await role.save();
+        revalidatePath(path)
 
         console.log("Role updated successfully:", role);
 

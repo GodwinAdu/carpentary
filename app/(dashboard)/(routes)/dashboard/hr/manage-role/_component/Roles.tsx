@@ -3,22 +3,15 @@
 import React from "react"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
     Shield,
     Search,
     Users,
-    Package,
-    ShoppingCart,
-    FileText,
-    CreditCard,
-    Settings,
+
     BarChart3,
-    Clock,
-    Briefcase,
     TrendingUp,
     Home,
-    DollarSign,
     ChevronDown,
     ChevronUp,
     Eye,
@@ -27,10 +20,8 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    Archive,
-    Tag,
-    Truck,
-    Calculator,
+    Building,
+    Briefcase,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -55,7 +46,7 @@ const permissionCategories = {
     global: {
         title: "Global Access",
         icon: <Shield className="h-5 w-5" />,
-        permissions: ["manageAccess", "manageOnlyPos"],
+        permissions: ["manageAccess"],
     },
     core: {
         title: "Core Modules",
@@ -65,190 +56,36 @@ const permissionCategories = {
             "hrManagement",
             "liveTracking",
             "buildingTracking",
-            "account",
+            "map",
+            "myTodo",
             "report",
-            "history",
-            "trash",
         ]
+    },
+    buildingManagement: {
+        title: "Building Management",
+        icon: <Building className="h-5 w-5" />,
+        permissions: ["addBuilding", "manageBuilding", "viewBuilding", "editBuilding", "deleteBuilding"],
     },
     roles: {
         title: "Role Management",
         icon: <Users className="h-5 w-5" />,
         permissions: ["addRole", "manageRole", "viewRole", "editRole", "deleteRole"],
     },
-    products: {
-        title: "Product Management",
-        icon: <Package className="h-5 w-5" />,
-        permissions: [
-            "listProduct",
-            "addProduct",
-            "manageProduct",
-            "viewProduct",
-            "editProduct",
-            "deleteProduct",
-            "manageImportProduct",
-        ],
-    },
-    units: {
-        title: "Unit Management",
-        icon: <Calculator className="h-5 w-5" />,
-        permissions: ["addUnit", "manageUnit", "viewUnit", "editUnit", "deleteUnit"],
-    },
-    brands: {
-        title: "Brand Management",
-        icon: <Tag className="h-5 w-5" />,
-        permissions: ["addBrand", "manageBrand", "viewBrand", "editBrand", "deleteBrand"],
-    },
-    categories: {
-        title: "Category Management",
-        icon: <Archive className="h-5 w-5" />,
-        permissions: ["addCategory", "manageCategory", "viewCategory", "editCategory", "deleteCategory"],
-    },
-    printLabels: {
-        title: "Print Labels",
-        icon: <FileText className="h-5 w-5" />,
-        permissions: ["addPrintLabel", "managePrintLabel", "viewPrintLabel"],
-    },
-    variations: {
-        title: "Product Variations",
-        icon: <Settings className="h-5 w-5" />,
-        permissions: ["addVariation", "manageVariation", "viewVariation", "editVariation", "deleteVariation"],
-    },
-    sales: {
-        title: "Sales Management",
-        icon: <ShoppingCart className="h-5 w-5" />,
-        permissions: ["manageAllSales", "addSales", "manageSales", "viewSales", "editSales", "deleteSales", "importSales"],
-    },
-    orders: {
-        title: "Order Management",
-        icon: <FileText className="h-5 w-5" />,
-        permissions: ["addOrder", "manageOrder", "viewOrder", "editOrder", "deleteOrder", "listOrder"],
-    },
-    returns: {
-        title: "Returns Management",
-        icon: <TrendingUp className="h-5 w-5" />,
-        permissions: ["listSellReturn", "listPurchaseReturn"],
-    },
-    purchases: {
-        title: "Purchase Management",
-        icon: <Truck className="h-5 w-5" />,
-        permissions: [
-            "listPurchase",
-            "addPurchase",
-            "managePurchase",
-            "viewPurchase",
-            "editPurchase",
-            "deletePurchase",
-            "importPurchase",
-        ],
-    },
-    stockTransfer: {
-        title: "Stock Transfer",
-        icon: <Archive className="h-5 w-5" />,
-        permissions: [
-            "listStockTransfer",
-            "addStockTransfer",
-            "manageStockTransfer",
-            "viewStockTransfer",
-            "editStockTransfer",
-            "deleteStockTransfer",
-        ],
-    },
-    stockAdjustment: {
-        title: "Stock Adjustment",
-        icon: <Settings className="h-5 w-5" />,
-        permissions: [
-            "listStockAdjustment",
-            "addStockAdjustment",
-            "manageStockAdjustment",
-            "viewStockAdjustment",
-            "editStockAdjustment",
-            "deleteStockAdjustment",
-        ],
-    },
-    expenseCategories: {
-        title: "Expense Categories",
-        icon: <FileText className="h-5 w-5" />,
-        permissions: [
-            "addExpensesCategory",
-            "manageExpensesCategory",
-            "viewExpensesCategory",
-            "editExpensesCategory",
-            "deleteExpensesCategory",
-        ],
-    },
-    accounts: {
-        title: "Account Management",
-        icon: <DollarSign className="h-5 w-5" />,
-        permissions: ["addListAccount", "manageListAccount", "viewListAccount", "editListAccount", "deleteListAccount"],
-    },
-    financialReports: {
-        title: "Financial Reports",
-        icon: <BarChart3 className="h-5 w-5" />,
-        permissions: ["balanceSheet", "trialBalance", "cashFlow", "paymentAccountReport", "profitLostReport"],
+    hr: {
+        title: "HR Records",
+        icon: <Briefcase className="h-5 w-5" />,
+        permissions: ["addHr", "viewHr", "editHr", "deleteHr", "manageHr"],
     },
     businessReports: {
         title: "Business Reports",
         icon: <TrendingUp className="h-5 w-5" />,
         permissions: [
-            "itemsReport",
-            "registerReport",
-            "expensesReport",
-            "productSellReport",
-            "productPurchaseReport",
-            "sellReturnReport",
-            "purchaseReturnReport",
-            "stockTransferReport",
-            "stockAdjustmentReport",
-            "salesReport",
-            "purchaseReport",
-            "trendingProductReport",
-            "stockExpiryReport",
-            "stockReport",
-            "taxReport",
-            "saleRepresentativeReport",
-            "customerSupplierReport",
-            "hrReport"
+            "hrReport",
+            "balanceSheet",
+            "trialBalance",
+            "cashFlow"
         ],
     },
-    hr: {
-        title: "HR Management",
-        icon: <Briefcase className="h-5 w-5" />,
-        permissions: ["addHr", "viewHr", "editHr", "deleteHr", "manageHr"],
-    },
-    salary: {
-        title: "Salary Requests",
-        icon: <DollarSign className="h-5 w-5" />,
-        permissions: [
-            "addRequestSalary",
-            "viewRequestSalary",
-            "editRequestSalary",
-            "deleteRequestSalary",
-            "manageRequestSalary",
-        ],
-    },
-    leave: {
-        title: "Leave Requests",
-        icon: <Clock className="h-5 w-5" />,
-        permissions: [
-            "addRequestLeave",
-            "viewRequestLeave",
-            "editRequestLeave",
-            "deleteRequestLeave",
-            "manageRequestLeave",
-        ],
-    },
-    leaveCategory: {
-        title: "Leave Categories",
-        icon: <FileText className="h-5 w-5" />,
-        permissions: [
-            "addLeaveCategory",
-            "viewLeaveCategory",
-            "editLeaveCategory",
-            "deleteLeaveCategory",
-            "manageLeaveCategory",
-        ],
-    }
 }
 
 // Function to get a human-readable name from a camelCase permission key

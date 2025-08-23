@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { SocketProvider } from "@/providers/socket-provider";
 import NextTopLoader from "nextjs-toploader";
 import { ThemeProvider } from "@/providers/theme-provider";
+import PWAInstall from "@/components/pwa-install";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,16 +21,12 @@ const geistMono = Geist_Mono({
 export { default as metadata } from './metadata';
 
 export const viewport: Viewport = {
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  minimumScale: 1,
-  themeColor: [
-    { color: '#f8f8f8', media: '(prefers-color-scheme: light)' },
-    { color: '#000', media: '(prefers-color-scheme: dark)' },
-  ],
   userScalable: false,
+  themeColor: '#000000',
   viewportFit: 'cover',
-  width: 'device-width',
 };
 
 
@@ -47,8 +45,22 @@ export default function RootLayout({
             <NextTopLoader showSpinner={false} />
             {children}
             <Toaster richColors />
+            <PWAInstall />
           </SocketProvider>
         </ThemeProvider>
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+              navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                  console.log('Service Worker registered:', registration);
+                })
+                .catch((error) => {
+                  console.log('Service Worker registration failed:', error);
+                });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
