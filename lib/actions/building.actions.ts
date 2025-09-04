@@ -34,6 +34,50 @@ interface CreateBuildingProps {
     estimatedCompletionDate?: Date;
 }
 
+interface AddCommentProps {
+    buildingId: string;
+    userName: string;
+    userEmail: string;
+    comment: string;
+    rating: number;
+    visitDate: string;
+    images?: string[];
+}
+
+interface AddPaymentProps {
+    buildingId: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    transactionId?: string;
+    paymentDate: string;
+    description: string;
+    receivedBy: string;
+    receivedByName: string;
+    receiptUrl?: string;
+}
+
+interface UpdateQuotationProps {
+    buildingId: string;
+    totalProjectCost: number;
+    startDate: Date;
+    estimatedCompletionDate: Date;
+    materialsCost?: number;
+    laborCost?: number;
+    accessoriesCost?: number;
+    transportationCost?: number;
+    roofingType?: string;
+    notes?: string;
+}
+
+interface UpdateStatusProps {
+    buildingId: string;
+    status: string;
+    priority: string;
+    notes?: string;
+}
+
+
 async function _createBuilding(
     user: User,
     values: CreateBuildingProps,
@@ -120,7 +164,14 @@ async function _fetchBuildingById(user: User, id: string) {
         if (!user) throw new Error("User not authenticated");
         await connectToDB();
 
-        const building = await Building.findById(id);
+        const building = await Building.findById(id)
+        .populate({
+                path: "createdBy",
+                select: "fullName",
+                model: "User"
+            })
+            .sort({ createdAt: -1 })
+            .exec();
 
         if (!building) throw new Error("Building not found");
 
@@ -195,12 +246,25 @@ async function _fetchAllBuilding(user: User) {
     try {
         if (!user) throw new Error("User not authenticated")
 
-        const buildings = await Building.find({});
+        const buildings = await Building.find({})
+            .populate({
+                path: "createdBy",
+                select: "fullName email",
+                model: "User"
+            })
+            .exec();
 
         if (buildings.length === 0) return [];
 
-        return JSON.parse(JSON.stringify(buildings))
+        const data = buildings.map((doc) => ({
+            ...doc.toObject(),
+            createdBy: (doc.createdBy as any)?.fullName || 'Unknown User',
+        }));
 
+        console.log(data, "all buildings from server")
+
+
+        return JSON.parse(JSON.stringify(data))
     } catch (error) {
         console.log("error while fetch all buildings", error);
         throw error
@@ -208,7 +272,7 @@ async function _fetchAllBuilding(user: User) {
 };
 
 
-async function _updateBuilding(user: User, id: string, values: CreateBuildingProps,path:string) {
+async function _updateBuilding(user: User, id: string, values: CreateBuildingProps, path: string) {
     try {
         if (!user) throw new Error("User not authenticated")
 
@@ -289,48 +353,6 @@ async function _deleteBuilding(user: User, id: string) {
 }
 
 
-interface AddCommentProps {
-    buildingId: string;
-    userName: string;
-    userEmail: string;
-    comment: string;
-    rating: number;
-    visitDate: string;
-    images?: string[];
-}
-
-interface AddPaymentProps {
-    buildingId: string;
-    amount: number;
-    currency: string;
-    paymentMethod: string;
-    transactionId?: string;
-    paymentDate: string;
-    description: string;
-    receivedBy: string;
-    receivedByName: string;
-    receiptUrl?: string;
-}
-
-interface UpdateQuotationProps {
-    buildingId: string;
-    totalProjectCost: number;
-    startDate: Date;
-    estimatedCompletionDate: Date;
-    materialsCost?: number;
-    laborCost?: number;
-    accessoriesCost?: number;
-    transportationCost?: number;
-    roofingType?: string;
-    notes?: string;
-}
-
-interface UpdateStatusProps {
-    buildingId: string;
-    status: string;
-    priority: string;
-    notes?: string;
-}
 
 async function _addComment(user: User, values: AddCommentProps) {
     try {
@@ -371,7 +393,7 @@ async function _addComment(user: User, values: AddCommentProps) {
             building.save(),
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_access',
                 action: `Added comment to building: ${building.buildingType}`,
                 details: { entityId: building._id, entityType: 'Building' }
@@ -444,7 +466,7 @@ async function _addPayment(user: User, values: AddPaymentProps) {
             building.save(),
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'building_access',
                 action: `Added payment of $${values.amount} to building: ${building.buildingType}`,
                 details: {
@@ -585,7 +607,7 @@ async function _updateBuildingStatus(user: User, values: UpdateStatusProps) {
         await Promise.all([
             history.save(),
             createActivity({
-                userId: user._id,
+                userId: user._id as string,
                 type: 'status_change',
                 action: `Updated status for building: ${building.buildingType}`,
                 details: {

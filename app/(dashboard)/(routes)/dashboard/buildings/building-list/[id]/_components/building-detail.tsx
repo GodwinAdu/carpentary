@@ -49,8 +49,11 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { ImageUploader } from "@/components/commons/ImageUpload"
 
+
 interface BuildingDetailPageProps {
     building: any
+    user:any
+    role:any
 }
 
 export default function BuildingDetailPage({ building }: BuildingDetailPageProps) {
@@ -398,7 +401,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                         <Tabs defaultValue="overview" className="w-full">
                             <TabsList className="grid w-full grid-cols-5">
                                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                                <TabsTrigger value="quotation">Quotation</TabsTrigger>
+                                {user.role === "admin" && <TabsTrigger value="quotation">Quotation</TabsTrigger>}
                                 <TabsTrigger value="payments">Payments</TabsTrigger>
                                 <TabsTrigger value="comments">Reviews</TabsTrigger>
                                 <TabsTrigger value="gallery">Gallery</TabsTrigger>
@@ -1446,6 +1449,11 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                     <Camera className="h-4 w-4 mr-2 text-gray-400" />
                                     <span className="text-gray-600 dark:text-gray-400">Last updated:</span>
                                     <span className="ml-2 font-medium">{new Date(building.updatedAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center text-sm">
+                                    <User className="h-4 w-4 mr-2 text-gray-400" />
+                                    <span className="text-gray-600 dark:text-gray-400">Created By:</span>
+                                    <span className="ml-2 font-medium">{building?.createdBy?.fullName || 'Unknown User'}</span>
                                 </div>
                             </CardContent>
                         </Card>

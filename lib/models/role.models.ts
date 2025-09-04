@@ -1,7 +1,7 @@
 import { Schema, model, models, Model } from "mongoose";
 
 // Define the IRole interface
-interface IRole {
+export interface IRole {
     _id?: string
     name: string
     displayName: string
@@ -128,6 +128,46 @@ const RoleSchema: Schema<IRole> = new Schema({
             type: Boolean,
             default: false
         },
+        addStaff: {
+            type: Boolean,
+            default: false
+        },
+        viewStaff: {
+            type: Boolean,
+            default: false
+        },
+        editStaff: {
+            type: Boolean,
+            default: false
+        },
+        deleteStaff: {
+            type: Boolean,
+            default: false
+        },
+        manageStaff: {
+            type: Boolean,
+            default: false
+        },
+        activateStaff: {
+            type: Boolean,
+            default: false,
+        },
+        deactivateStaff: {
+            type: Boolean,
+            default: false,
+        },
+        resetPasswordStaff: {
+            type: Boolean,
+            default: false,
+        },
+        sendInvite: {
+            type: Boolean,
+            default: false,
+        },
+        viewActivityLog: {
+            type: Boolean,
+            default: false,
+        },
         addRole: {
             type: Boolean,
             default: false
@@ -145,6 +185,26 @@ const RoleSchema: Schema<IRole> = new Schema({
             default: false
         },
         manageRole: {
+            type: Boolean,
+            default: false
+        },
+        addDepartment: {
+            type: Boolean,
+            default: false
+        },
+        viewDepartment: {
+            type: Boolean,
+            default: false
+        },
+        editDepartment: {
+            type: Boolean,
+            default: false
+        },
+        deleteDepartment: {
+            type: Boolean,
+            default: false
+        },
+        manageDepartment: {
             type: Boolean,
             default: false
         },

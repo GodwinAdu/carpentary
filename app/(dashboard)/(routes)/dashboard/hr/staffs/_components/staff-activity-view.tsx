@@ -14,24 +14,37 @@ import {
   Eye,
   Edit,
   UserCheck,
-  Mail
+  Mail,
+  Building2,
+  Upload,
+  FileText
 } from "lucide-react"
 import Link from "next/link"
 
 interface StaffActivityViewProps {
   staff: any
-  activities: any[]
+  activitiesData: {
+    activities: any[]
+    pagination: {
+      currentPage: number
+      totalPages: number
+      total: number
+      hasNext: boolean
+      hasPrev: boolean
+    }
+  }
   stats: any
 }
 
-export function StaffActivityView({ staff, activities, stats }: StaffActivityViewProps) {
-  // Real activity data from database
+export function StaffActivityView({ staff, activitiesData, stats }: StaffActivityViewProps) {
+  const { activities, pagination } = activitiesData
+  
   const mockActivities = [
     {
       id: 1,
       type: 'login',
       action: 'Logged into system',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
       location: 'Office - Main Building',
       ip: '192.168.1.100',
       device: 'Desktop - Chrome'
@@ -40,7 +53,7 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
       id: 2,
       type: 'profile_update',
       action: 'Updated profile information',
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       location: 'Remote',
       ip: '10.0.0.50',
       device: 'Mobile - Safari'
@@ -49,7 +62,7 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
       id: 3,
       type: 'building_access',
       action: 'Accessed Building Project #BLD-001',
-      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       location: 'Site Office',
       ip: '192.168.1.105',
       device: 'Tablet - Chrome'
@@ -58,7 +71,7 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
       id: 4,
       type: 'password_change',
       action: 'Changed account password',
-      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
+      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       location: 'Office - Main Building',
       ip: '192.168.1.100',
       device: 'Desktop - Firefox'
@@ -67,14 +80,13 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
       id: 5,
       type: 'email_verification',
       action: 'Verified email address',
-      timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 2 weeks ago
+      timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       location: 'Remote',
       ip: '203.0.113.1',
       device: 'Mobile - Chrome'
     }
   ]
 
-  // Use real activities if available, fallback to mock for demo
   const displayActivities = activities.length > 0 ? activities : mockActivities
 
   const getActivityIcon = (type: string) => {
@@ -113,7 +125,6 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="sm" asChild>
           <Link href={`/dashboard/hr/staffs/${staff._id}`}>
@@ -127,8 +138,7 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* Staff Summary */}
+      <div className="grid lg:grid-cols-4 gap-4 lg:gap-6">
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <Avatar className="h-16 w-16 mx-auto mb-2">
@@ -154,13 +164,12 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Activity className="h-4 w-4 text-slate-500" />
-              <span>{displayActivities.length} activities logged</span>
+              <span>{pagination.total || displayActivities.length} activities logged</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Activity Timeline */}
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-amber-500" />
@@ -170,17 +179,17 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {displayActivities.map((activity, index) => (
-                <div key={activity.id} className="flex items-start gap-4 p-4 rounded-lg border hover:bg-slate-50 transition-colors">
+              {displayActivities.map((activity) => (
+                <div key={activity._id || activity.id} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-4 rounded-lg border hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100">
                     {getActivityIcon(activity.type)}
                   </div>
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <p className="font-medium text-slate-900">{activity.action}</p>
                       {getActivityBadge(activity.type)}
                     </div>
-                    <div className="grid md:grid-cols-3 gap-2 text-sm text-slate-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-slate-600">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {new Date(activity.createdAt || activity.timestamp).toLocaleString()}
@@ -199,67 +208,133 @@ export function StaffActivityView({ staff, activities, stats }: StaffActivityVie
                 </div>
               ))}
             </div>
+            
+            {pagination.totalPages > 1 && (
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-slate-600">
+                    Showing {((pagination.currentPage - 1) * 10) + 1} to {Math.min(pagination.currentPage * 10, pagination.total)} of {pagination.total} activities
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={!pagination.hasPrev}
+                      asChild={pagination.hasPrev}
+                      className="px-3 py-2"
+                    >
+                      {pagination.hasPrev ? (
+                        <Link href={`?page=${pagination.currentPage - 1}`}>Previous</Link>
+                      ) : (
+                        <span>Previous</span>
+                      )}
+                    </Button>
+                    
+                    <div className="hidden sm:flex items-center gap-1 mx-2">
+                      {(() => {
+                        const { currentPage, totalPages } = pagination
+                        const pages = []
+                        const showEllipsis = totalPages > 7
+                        
+                        if (!showEllipsis) {
+                          for (let i = 1; i <= totalPages; i++) {
+                            pages.push(i)
+                          }
+                        } else {
+                          if (currentPage <= 4) {
+                            pages.push(1, 2, 3, 4, 5, '...', totalPages)
+                          } else if (currentPage >= totalPages - 3) {
+                            pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+                          } else {
+                            pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages)
+                          }
+                        }
+                        
+                        return pages.map((pageNum, index) => {
+                          if (pageNum === '...') {
+                            return <span key={`ellipsis-${index}`} className="px-2 text-slate-400">...</span>
+                          }
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={pageNum === currentPage ? "default" : "outline"}
+                              size="sm"
+                              asChild
+                              className="w-10 h-10 p-0"
+                            >
+                              <Link href={`?page=${pageNum}`}>{pageNum}</Link>
+                            </Button>
+                          )
+                        })
+                      })()}
+                    </div>
+                    
+                    <div className="sm:hidden text-sm text-slate-600 mx-3">
+                      Page {pagination.currentPage} of {pagination.totalPages}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={!pagination.hasNext}
+                      asChild={pagination.hasNext}
+                      className="px-3 py-2"
+                    >
+                      {pagination.hasNext ? (
+                        <Link href={`?page=${pagination.currentPage + 1}`}>Next</Link>
+                      ) : (
+                        <span>Next</span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Activity Summary Cards */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-                <UserCheck className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Total Logins</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.totalLogins || 24}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
-                <Eye className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Projects Accessed</p>
-                <p className="text-2xl font-bold text-blue-600">{stats?.projectsAccessed || 12}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
-                <Edit className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Profile Updates</p>
-                <p className="text-2xl font-bold text-purple-600">{stats?.profileUpdates || 3}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100">
-                <Shield className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Security Actions</p>
-                <p className="text-2xl font-bold text-amber-600">{stats?.securityActions || 2}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {(() => {
+          const activityTypes = [
+            { key: 'login', label: 'Logins', icon: UserCheck, color: 'green' },
+            { key: 'logout', label: 'Logouts', icon: UserCheck, color: 'red' },
+            { key: 'profile_update', label: 'Profile Updates', icon: Edit, color: 'blue' },
+            { key: 'password_change', label: 'Password Changes', icon: Shield, color: 'amber' },
+            { key: 'building_access', label: 'Building Access', icon: Eye, color: 'purple' },
+            { key: 'building_create', label: 'Buildings Created', icon: Building2, color: 'indigo' },
+            { key: 'building_update', label: 'Buildings Updated', icon: Building2, color: 'cyan' },
+            { key: 'email_verification', label: 'Email Verifications', icon: Mail, color: 'teal' },
+            { key: 'status_change', label: 'Status Changes', icon: Activity, color: 'orange' },
+            { key: 'role_change', label: 'Role Changes', icon: Shield, color: 'pink' },
+            { key: 'file_upload', label: 'File Uploads', icon: Upload, color: 'lime' },
+            { key: 'report_generate', label: 'Reports Generated', icon: FileText, color: 'violet' },
+            { key: 'system_access', label: 'System Access', icon: Activity, color: 'slate' }
+          ]
+          
+          return activityTypes.map(({ key, label, icon: Icon, color }) => {
+            const count = displayActivities.filter(activity => activity.type === key).length
+            if (count === 0) return null
+            
+            return (
+              <Card key={key}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-${color}-100`}>
+                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 text-${color}-600`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium truncate">{label}</p>
+                      <p className={`text-lg sm:text-2xl font-bold text-${color}-600`}>{count}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          }).filter(Boolean)
+        })()
+        }
       </div>
     </div>
   )

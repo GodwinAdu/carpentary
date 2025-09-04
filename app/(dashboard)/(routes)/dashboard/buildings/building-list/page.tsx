@@ -6,15 +6,25 @@ import { ArrowLeft, Building2, MapPin, Calendar, DollarSign, Star, MessageSquare
 import Link from "next/link"
 import { fetchAllBuilding } from "@/lib/actions/building.actions"
 import { format } from "date-fns"
+import { currentUser } from "@/lib/helpers/session"
+import { currentUserRole } from "@/lib/helpers/get-user-role"
 
 export default async function BuildingsPage() {
-  const buildings = await fetchAllBuilding()
+
+  const [buildings, user, role] = await Promise.all([
+    fetchAllBuilding(),
+    currentUser(),
+    currentUserRole()
+  ])
+  //
+
+
 
   // Calculate statistics
-  const totalRevenue = buildings.reduce((sum, b) => sum + (b.totalPaidAmount || 0), 0)
-  const totalPending = buildings.reduce((sum, b) => sum + (b.remainingBalance || 0), 0)
-  const avgRating = buildings.reduce((sum, b) => sum + (b.averageRating || 0), 0) / buildings.length || 0
-  const totalComments = buildings.reduce((sum, b) => sum + (b.comments?.length || 0), 0)
+  const totalRevenue = buildings.reduce((sum: number, b: any) => sum + (b.totalPaidAmount || 0), 0)
+  const totalPending = buildings.reduce((sum: number, b: any) => sum + (b.remainingBalance || 0), 0)
+  const avgRating = buildings.reduce((sum: number, b: any) => sum + (b.averageRating || 0), 0) / buildings.length || 0
+  const totalComments = buildings.reduce((sum: number, b: any) => sum + (b.comments?.length || 0), 0)
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -58,7 +68,7 @@ export default async function BuildingsPage() {
               <p className="text-gray-600 dark:text-gray-400">Comprehensive building management and analytics</p>
             </div>
           </div>
-         
+
         </div>
 
         {/* Enhanced Stats Cards */}
@@ -75,29 +85,34 @@ export default async function BuildingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600 mr-4" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalRevenue.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+          {user?.role === 'admin' && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <DollarSign className="h-8 w-8 text-green-600 mr-4" />
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalRevenue.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-orange-600 mr-4" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalPending.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
+          {user?.role === "admin" && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <TrendingUp className="h-8 w-8 text-orange-600 mr-4" />
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">₵{totalPending.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Pending Payments</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
 
           <Card>
             <CardContent className="p-6">
@@ -115,7 +130,7 @@ export default async function BuildingsPage() {
         {/* Category Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {["Commercial", "Residential", "Industrial", "Public", "Mixed-Use"].map((category) => {
-            const count = buildings.filter((b) => b.category === category).length
+            const count = buildings.filter((b: any) => b.category === category).length
             return (
               <Card key={category}>
                 <CardContent className="p-4 text-center">
@@ -135,7 +150,7 @@ export default async function BuildingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {buildings.map((building) => {
+              {buildings.map((building: any) => {
                 const paymentProgress =
                   building.totalProjectCost > 0 ? (building.totalPaidAmount / building.totalProjectCost) * 100 : 0
 
@@ -206,11 +221,13 @@ export default async function BuildingsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/dashboard/buildings/building-list/${building._id}`}>View Details</Link>
-                        </Button>
-                      </div>
+                      {role.permissions.viewBuilding && (
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/dashboard/buildings/building-list/${building._id}`}>View Details</Link>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )

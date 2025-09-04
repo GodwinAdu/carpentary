@@ -8,8 +8,6 @@ import {
     Shield,
     Search,
     Users,
-
-    BarChart3,
     TrendingUp,
     Home,
     ChevronDown,
@@ -76,6 +74,16 @@ const permissionCategories = {
         icon: <Briefcase className="h-5 w-5" />,
         permissions: ["addHr", "viewHr", "editHr", "deleteHr", "manageHr"],
     },
+    staffManagement: {
+        title: "Staff Management",
+        icon: <Users className="h-5 w-5" />,
+        permissions: ["addStaff", "viewStaff", "editStaff", "deleteStaff", "manageStaff", "activateStaff", "deactivateStaff", "resetPasswordStaff", "sendInvite", "viewActivityLog"],
+    },
+    departmentManagement: {
+        title: "Department Management",
+        icon: <Building className="h-5 w-5" />,
+        permissions: ["addDepartment", "viewDepartment", "editDepartment", "deleteDepartment", "manageDepartment"],
+    },
     businessReports: {
         title: "Business Reports",
         icon: <TrendingUp className="h-5 w-5" />,
@@ -110,7 +118,7 @@ interface IRole {
     userCount: any[] // Array of user IDs or user objects
 }
 
-const RolesDisplayPage = ({ roles }: { roles: IRole[] }) => {
+const RolesDisplayPage = ({ roles, userRole }: { roles: IRole[], userRole: IRole }) => {
     const router = useRouter()
 
     const [selectedRole, setSelectedRole] = useState<IRole | null>(null)
@@ -304,34 +312,40 @@ const RolesDisplayPage = ({ roles }: { roles: IRole[] }) => {
                                                                             </Button>
                                                                         </DropdownMenuTrigger>
                                                                         <DropdownMenuContent align="end">
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => setSelectedRole(role)}
-                                                                                className="cursor-pointer"
-                                                                            >
-                                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                                View Details
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() =>
-                                                                                    router.push(
-                                                                                        `/dashboard/hr/manage-role/${role._id}`,
-                                                                                    )
-                                                                                }
-                                                                                className="cursor-pointer"
-                                                                            >
-                                                                                <Edit className="mr-2 h-4 w-4" />
-                                                                                Edit Role
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => {
-                                                                                    setRoleToDelete(role)
-                                                                                    setShowDeleteDialog(true)
-                                                                                }}
-                                                                                className="cursor-pointer text-destructive focus:text-destructive"
-                                                                            >
-                                                                                <Trash className="mr-2 h-4 w-4" />
-                                                                                Delete Role
-                                                                            </DropdownMenuItem>
+                                                                            {userRole.permissions.viewRole && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => setSelectedRole(role)}
+                                                                                    className="cursor-pointer"
+                                                                                >
+                                                                                    <Eye className="mr-2 h-4 w-4" />
+                                                                                    View Details
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            {userRole.permissions.editRole && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() =>
+                                                                                        router.push(
+                                                                                            `/dashboard/hr/manage-role/${role._id}`,
+                                                                                        )
+                                                                                    }
+                                                                                    className="cursor-pointer"
+                                                                                >
+                                                                                    <Edit className="mr-2 h-4 w-4" />
+                                                                                    Edit Role
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            {userRole.permissions.deleteRole && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => {
+                                                                                        setRoleToDelete(role)
+                                                                                        setShowDeleteDialog(true)
+                                                                                    }}
+                                                                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                                                                >
+                                                                                    <Trash className="mr-2 h-4 w-4" />
+                                                                                    Delete Role
+                                                                                </DropdownMenuItem>
+                                                                            )}
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 </TableCell>
@@ -368,29 +382,33 @@ const RolesDisplayPage = ({ roles }: { roles: IRole[] }) => {
                                                             <div className="text-xs text-muted-foreground">Updated {formatDate(role?.updatedAt)}</div>
 
                                                             <div className="flex gap-1">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        router.push(
-                                                                            `/dashboard/hr/manage-role/${role._id}`,
-                                                                        )
-                                                                    }}
-                                                                >
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        setRoleToDelete(role)
-                                                                        setShowDeleteDialog(true)
-                                                                    }}
-                                                                >
-                                                                    <Trash className="h-4 w-4 text-destructive" />
-                                                                </Button>
+                                                                {userRole.permissions.editRole && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            router.push(
+                                                                                `/dashboard/hr/manage-role/${role._id}`,
+                                                                            )
+                                                                        }}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                {userRole.permissions.deleteRole && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            setRoleToDelete(role)
+                                                                            setShowDeleteDialog(true)
+                                                                        }}
+                                                                    >
+                                                                        <Trash className="h-4 w-4 text-destructive" />
+                                                                    </Button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -412,29 +430,32 @@ const RolesDisplayPage = ({ roles }: { roles: IRole[] }) => {
                                         </div>
 
                                         <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() =>
-                                                    router.push(`/dashboard/hr/manage-role/${selectedRole._id}`)
-                                                }
-                                                className="gap-1"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setRoleToDelete(selectedRole)
-                                                    setShowDeleteDialog(true)
-                                                }}
-                                                className="gap-1"
-                                            >
-                                                <Trash className="h-4 w-4" />
-                                                Delete
-                                            </Button>
+                                            {userRole.permissions.editRole && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        router.push(`/dashboard/hr/manage-role/${selectedRole._id}`)
+                                                    }
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                    Edit
+                                                </Button>
+                                            )}
+                                            {userRole.permissions.deleteRole && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setRoleToDelete(selectedRole)
+                                                        setShowDeleteDialog(true)
+                                                    }}
+                                                    className="gap-1"
+                                                >
+                                                    <Trash className="h-4 w-4" />
+                                                    Delete
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
 

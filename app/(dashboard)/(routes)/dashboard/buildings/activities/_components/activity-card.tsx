@@ -160,7 +160,7 @@ export default function ActivityCard({ activity, onUpdate }: ActivityCardProps) 
   const handleStatusChange = async (newStatus: string) => {
     setLoading(true);
     try {
-      await updateActivity(activity._id, { status: newStatus }, window.location.pathname);
+      await updateActivity(activity._id, { status: newStatus });
       toast.success(`Activity status updated to ${newStatus}`);
       onUpdate();
     } catch (error) {

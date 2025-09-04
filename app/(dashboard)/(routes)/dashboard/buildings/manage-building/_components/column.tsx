@@ -66,6 +66,10 @@ export const columns: ColumnDef<any>[] = [
     )
   },
   {
+    accessorKey: "createdBy",
+    header: "Created By",
+  },
+  {
     id: "actions",
     cell: ({ row }) =>
       <CellAction
@@ -77,13 +81,13 @@ export const columns: ColumnDef<any>[] = [
             type: "edit",
             href: `/dashboard/buildings/manage-building/${row.original._id}`,
             icon: <Edit className="h-4 w-4" />,
-            // permissionKey: "editUser",
+            permissionKey: "editBuilding",
           },
           {
             label: "Delete",
             type: "delete",
             icon: <Trash2 className="h-4 w-4" />,
-            // permissionKey: "deleteUser",
+            permissionKey: "deleteBuilding",
           },
         ]}
       />

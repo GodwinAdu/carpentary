@@ -49,5 +49,89 @@ async function _fetchAllDepartments<T>(user: User): Promise<T[]> {
     }
 };
 
+async function _fetchDepartmentById<T>(user: User, departmentId: string): Promise<T> {
+    try {
+        if (!user || !user._id) {
+            throw new Error("User not authenticated");
+        }
+
+        const department = await Department.findById(departmentId)
+            .populate("createdBy", "fullName email")
+            .populate("modifiedBy", "fullName email")
+            .populate("members", "fullName email jobTitle avatarUrl isActive");
+
+        if (!department) {
+            throw new Error("Department not found");
+        }
+
+        return JSON.parse(JSON.stringify(department));
+    } catch (error) {
+        console.error("Error fetching department:", error);
+        throw error;
+    }
+};
+
+async function _updateDepartment<T>(user: User, departmentId: string, values: any): Promise<T> {
+    try {
+        if (!user || !user._id) {
+            throw new Error("User not authenticated");
+        }
+
+        const updatedDepartment = await Department.findByIdAndUpdate(
+            departmentId,
+            {
+                ...values,
+                modifiedBy: user._id,
+                action_type: "update",
+            },
+            { new: true }
+        ).populate("members", "fullName email jobTitle avatarUrl status");
+
+        if (!updatedDepartment) {
+            throw new Error("Department not found");
+        }
+
+        return JSON.parse(JSON.stringify(updatedDepartment));
+    } catch (error) {
+        console.error("Error updating department:", error);
+        throw error;
+    }
+};
+
+async function _addMemberToDepartment<T>(user: User, departmentId: string, memberId: string): Promise<T> {
+    try {
+        if (!user || !user._id) {
+            throw new Error("User not authenticated");
+        }
+
+        const department = await Department.findById(departmentId);
+        if (!department) {
+            throw new Error("Department not found");
+        }
+
+        if (department.members.includes(memberId)) {
+            throw new Error("User is already a member of this department");
+        }
+
+        const updatedDepartment = await Department.findByIdAndUpdate(
+            departmentId,
+            {
+                $push: { members: memberId },
+                modifiedBy: user._id,
+                action_type: "add_member",
+            },
+            { new: true }
+        ).populate("members", "fullName email jobTitle avatarUrl status");
+
+        return JSON.parse(JSON.stringify(updatedDepartment));
+    } catch (error) {
+        console.error("Error adding member to department:", error);
+        throw error;
+    }
+};
+
 export const createDepartment = await withAuth(_createDepartment);
 export const fetchAllDepartments = await withAuth(_fetchAllDepartments);
+export const fetchDepartmentById = await withAuth(_fetchDepartmentById);
+export const updateDepartment = await withAuth(_updateDepartment);
+export const addMemberToDepartment = await withAuth(_addMemberToDepartment);

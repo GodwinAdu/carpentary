@@ -34,7 +34,7 @@ const page = async () => {
           title="Role Management"
           description="View and manage user roles and their permissions."
         />
-        {/* {addRole && ( */}
+        {addRole && (
           <Link
             href={`manage-role/create-role`}
             className={cn(buttonVariants())}
@@ -42,11 +42,11 @@ const page = async () => {
             <PlusCircle className="w-4 h-4 mr-2" />
             Create role
           </Link>
-        {/* )} */}
+        )}
       </div>
       <Separator />
       <div className="">
-        <RolesDisplayPage roles={values} />
+        <RolesDisplayPage roles={values} userRole={role} />
       </div>
     </>
   )

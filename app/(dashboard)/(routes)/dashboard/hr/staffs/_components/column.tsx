@@ -3,22 +3,22 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-    Edit, 
-    Trash2, 
-    Eye, 
-    UserX, 
-    UserCheck, 
-    Key, 
-    Mail, 
-    Shield, 
+import {
+    Edit,
+    Trash2,
+    Eye,
+    UserX,
+    UserCheck,
+    Key,
+    Mail,
+    Shield,
     Clock,
     MapPin
 } from "lucide-react";
 import { CellAction } from "@/components/table/cell-action";
 import { toast } from "sonner";
 import { deleteStaff, updateUserStatus, resetUserPassword, sendInviteEmail } from "@/lib/actions/user.actions";
-import { useRouter } from "next/navigation";
+
 
 
 const handleDelete = async (id: string): Promise<void> => {
@@ -102,13 +102,12 @@ export const columns: ColumnDef<any>[] = [
                         <p className="font-medium text-slate-900">{name}</p>
                         <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">{role}</Badge>
-                            <Badge 
+                            <Badge
                                 variant={status === 'active' ? 'default' : 'secondary'}
-                                className={`text-xs ${
-                                    status === 'active' 
-                                        ? 'bg-green-100 text-green-700 border-green-200' 
+                                className={`text-xs ${status === 'active'
+                                        ? 'bg-green-100 text-green-700 border-green-200'
                                         : 'bg-red-100 text-red-700 border-red-200'
-                                }`}
+                                    }`}
                             >
                                 {status}
                             </Badge>
@@ -164,7 +163,7 @@ export const columns: ColumnDef<any>[] = [
         cell: ({ row }) => {
             const staff = row.original;
             const isActive = staff.status === 'active';
-            
+
             return (
                 <CellAction
                     data={staff}
@@ -175,36 +174,42 @@ export const columns: ColumnDef<any>[] = [
                             type: "view",
                             href: `/dashboard/hr/staffs/${staff._id}`,
                             icon: <Eye className="h-4 w-4" />,
+                            permissionKey: "viewStaff"
                         },
                         {
                             label: "Edit Profile",
                             type: "edit",
                             href: `/dashboard/hr/staffs/${staff._id}/edit`,
                             icon: <Edit className="h-4 w-4" />,
+                            permissionKey: "editStaff"
                         },
                         {
                             label: isActive ? "Deactivate" : "Activate",
                             type: "custom",
                             onClick: isActive ? handleDeactivate : handleActivate,
                             icon: isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />,
+                            permissionKey: isActive ? "deactivateStaff" : "activateStaff"
                         },
                         {
                             label: "Reset Password",
                             type: "custom",
                             onClick: handleResetPassword,
                             icon: <Key className="h-4 w-4" />,
+                            permissionKey: "resetPasswordStaff"
                         },
                         {
                             label: "Send Invite",
                             type: "custom",
                             onClick: handleSendInvite,
                             icon: <Mail className="h-4 w-4" />,
+                            permissionKey: "sendInvite"
                         },
                         {
                             label: "View Activity",
                             type: "custom",
                             onClick: handleViewActivity,
                             icon: <Shield className="h-4 w-4" />,
+                            permissionKey: "viewActivityLog"
                         },
                         {
                             label: "Track Location",
@@ -216,6 +221,7 @@ export const columns: ColumnDef<any>[] = [
                             label: "Delete Staff",
                             type: "delete",
                             icon: <Trash2 className="h-4 w-4" />,
+                            permissionKey: "deleteStaff"
                         },
                     ]}
                 />

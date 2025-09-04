@@ -1,5 +1,6 @@
 "use server"
 
+import mongoose, { Types } from "mongoose"
 import { currentUser } from "../helpers/session"
 import Activity from "../models/activity.models"
 import { connectToDB } from "../mongoose"
@@ -43,20 +44,38 @@ export async function createActivity(params: CreateActivityParams) {
     }
 }
 
-export async function fetchUserActivities() {
+export async function fetchUserActivities(id: string, page: number = 1, limit: number = 10) {
     try {
         const user = await currentUser()
+        if (!user) throw new Error("User not authenticated")
         await connectToDB()
 
-        const activities = await Activity.find({ userId:user?._id })
+        const skip = (page - 1) * limit
+        const activities = await Activity.find({ userId: id })
             .sort({ createdAt: -1 })
-            .limit(50)
+            .skip(skip)
+            .limit(limit)
             .lean()
 
-        return JSON.parse(JSON.stringify(activities))
+        const total = await Activity.countDocuments({ userId: id })
+        const totalPages = Math.ceil(total / limit)
+
+        return {
+            activities: JSON.parse(JSON.stringify(activities)),
+            pagination: {
+                currentPage: page,
+                totalPages,
+                total,
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+            }
+        }
     } catch (error) {
         console.error('Error fetching activities:', error)
-        return []
+        return {
+            activities: [],
+            pagination: { currentPage: 1, totalPages: 0, total: 0, hasNext: false, hasPrev: false }
+        }
     }
 }
 
@@ -64,8 +83,10 @@ export async function getActivityStats(userId: string) {
     try {
         await connectToDB()
 
+        const id = new Types.ObjectId(userId)
+
         const stats = await Activity.aggregate([
-            { $match: { userId: userId } },
+            { $match: { userId: id } },
             {
                 $group: {
                     _id: '$type',
@@ -74,6 +95,7 @@ export async function getActivityStats(userId: string) {
             }
         ])
 
+        
         return {
             totalLogins: stats.find(s => s._id === 'login')?.count || 0,
             projectsAccessed: stats.find(s => s._id === 'building_access')?.count || 0,
@@ -83,5 +105,22 @@ export async function getActivityStats(userId: string) {
     } catch (error) {
         console.error('Error fetching activity stats:', error)
         return { totalLogins: 0, projectsAccessed: 0, profileUpdates: 0, securityActions: 0 }
+    }
+}
+
+export async function updateActivity(activityId: string, updateData: any) {
+    try {
+        await connectToDB()
+
+        const updatedActivity = await Activity.findByIdAndUpdate(
+            activityId,
+            { ...updateData, updatedAt: new Date() },
+            { new: true }
+        )
+
+        return JSON.parse(JSON.stringify(updatedActivity))
+    } catch (error) {
+        console.error('Error updating activity:', error)
+        throw error
     }
 }

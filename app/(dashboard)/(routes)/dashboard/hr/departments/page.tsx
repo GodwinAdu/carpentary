@@ -6,12 +6,17 @@ import { Separator } from '@/components/ui/separator'
 import { DataTable } from '@/components/table/data-table'
 import { columns } from './_components/column'
 import { fetchAllDepartments } from '@/lib/actions/department.actions'
+import { currentUserRole } from '@/lib/helpers/get-user-role'
 
 
 // type Params = Promise<{ branchId: string }>
 const page = async () => {
 
-  const data = await fetchAllDepartments();
+  const [data,role] = await Promise.all([
+    fetchAllDepartments(),
+    currentUserRole()
+ 
+  ])
 
   console.log(data)
 
@@ -20,7 +25,9 @@ const page = async () => {
       <div className="flex justify-between items-center px-3">
         <Heading title="Manage Department" />
         <div className="flex gap-4">
-          <DepartmentModal />
+          {role?.permissions?.addDepartment && (
+            <DepartmentModal />
+          )}
         </div>
       </div>
       <Separator />

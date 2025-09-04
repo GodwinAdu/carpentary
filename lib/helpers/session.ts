@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { fetchUserById } from "../actions/user.actions";
+import { createActivity } from "../actions/activity.actions";
 
 
 interface User {
@@ -293,6 +294,7 @@ export async function login(userId: string, role: string, rememberMe: boolean = 
  * Logout function - can be called from client components
  */
 export async function logout(redirectTo: string = "/login") {
+    const user = await currentUser()
     const cookieStore = await cookies();
     cookieStore.delete("token");
     cookieStore.delete("refreshToken");
@@ -300,6 +302,13 @@ export async function logout(redirectTo: string = "/login") {
     // Clear the entire session cache on logout
     Object.keys(sessionCache).forEach(key => {
         delete sessionCache[key];
+    });
+
+    await createActivity({
+        userId: user?._id as string,
+        type: 'logout',
+        action: `User logged out`,
+        details: { entityId: user?._id as string, entityType: 'User' },
     });
 
     redirect(redirectTo);

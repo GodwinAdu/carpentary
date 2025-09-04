@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import CreateActivityDialog from "./create-activity-dialog";
 import ActivityCard from "./activity-card";
 import ActivityStats from "./activity-stats";
-import { fetchActivities, getActivityStats } from "@/lib/actions/activity.actions";
+import { fetchUserActivities, getActivityStats } from "@/lib/actions/activity.actions";
 import { fetchAllBuilding } from "@/lib/actions/building.actions";
 
 interface Activity {
@@ -129,18 +129,18 @@ export default function ActivityDashboard() {
     try {
       setLoading(true);
       const [activitiesData, buildingsData, statsData] = await Promise.all([
-        fetchActivities(),
+        fetchUserActivities('all'),
         fetchAllBuilding(),
-        getActivityStats(),
+        getActivityStats('all'),
       ]);
 
-      setActivities(activitiesData || []);
+      setActivities(activitiesData?.activities || []);
       setBuildings(buildingsData || []);
-      setStats(statsData || {
-        total: 0,
+      setStats({
+        total: statsData?.totalLogins || 0,
         scheduled: 0,
-        inProgress: 0,
-        completed: 0,
+        inProgress: statsData?.projectsAccessed || 0,
+        completed: statsData?.profileUpdates || 0,
         overdue: 0,
         cancelled: 0,
         avgProgress: 0,

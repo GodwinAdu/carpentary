@@ -5,6 +5,7 @@ import User from "../models/user.models";
 import { connectToDB } from "../mongoose";
 import { login } from "../helpers/session";
 import Customer from "../models/customer.models";
+import { createActivity } from "./activity.actions";
 
 
 export const loginUser = async (values: { email: string; password: string; rememberMe?: boolean }) => {
@@ -24,6 +25,12 @@ export const loginUser = async (values: { email: string; password: string; remem
         if (!isPasswordValid) throw new Error("Invalid password");
 
         await login(user._id as string, user.role, rememberMe)
+        await createActivity({
+            userId: user._id as string,
+            type: 'login',
+            action: `User logged in`,
+            details: { entityId: user._id, entityType: 'User' },
+        });
 
         return JSON.parse(JSON.stringify(user));
     } catch (error) {
