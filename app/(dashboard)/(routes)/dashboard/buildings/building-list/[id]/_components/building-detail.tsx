@@ -56,7 +56,7 @@ interface BuildingDetailPageProps {
     role:any
 }
 
-export default function BuildingDetailPage({ building }: BuildingDetailPageProps) {
+export default function BuildingDetailPage({ building,user,role }: BuildingDetailPageProps) {
     const router = useRouter()
     const [users, setUsers] = useState<any[]>([])
     const [isPending, startTransition] = useTransition()
@@ -107,8 +107,8 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
     const [isQuotationDialogOpen, setIsQuotationDialogOpen] = useState(false)
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
     const [submitMessage, setSubmitMessage] = useState("")
-    const [startDate, setStartDate] = useState("")
-    const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("")
+    const [startDate, setStartDate] = useState<Date | null>(null)
+    const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<Date | null>(null)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     // Load users when payment dialog opens
@@ -527,7 +527,7 @@ export default function BuildingDetailPage({ building }: BuildingDetailPageProps
                                     <CardContent className="p-0">
                                         <div className="aspect-video relative rounded-lg overflow-hidden">
                                             <Image
-                                                src={building.imageUrl || "/placeholder.svg"}
+                                                src={building.imgUrls[0] || "/placeholder.svg"}
                                                 alt={building.name}
                                                 fill
                                                 className="object-cover"

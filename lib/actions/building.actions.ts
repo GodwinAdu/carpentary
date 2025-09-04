@@ -60,8 +60,8 @@ interface AddPaymentProps {
 interface UpdateQuotationProps {
     buildingId: string;
     totalProjectCost: number;
-    startDate: Date;
-    estimatedCompletionDate: Date;
+    startDate: Date | null;
+    estimatedCompletionDate: Date | null;
     materialsCost?: number;
     laborCost?: number;
     accessoriesCost?: number;

@@ -97,10 +97,10 @@ export function Hero() {
                         <div className="relative group">
                             <div className="relative z-10 overflow-hidden rounded-2xl">
                                 <Image
-                                    src="/placeholder.svg?height=600&width=500"
+                                    src="/hero3.jpg"
                                     alt="Professional carpentry work"
                                     width={500}
-                                    height={600}
+                                    height={500}
                                     className="rounded-2xl shadow-2xl transition-transform duration-700 group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
