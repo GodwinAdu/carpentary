@@ -92,14 +92,15 @@ async function _fetchAllRoles(user: User) {
 
 async function _fetchRole(user: User, value: string) {
     try {
+        console.log("Fetching role for value:", value);
+        console.log("User in fetchRole:", user);
         if (!user) {
             throw new Error("User not authenticated");
         }
 
-        const schoolId = user.schoolId
         await connectToDB();
 
-        const role = await Role.findOne({ schoolId, displayName: value });
+        const role = await Role.findOne({ displayName: value });
 
         if (!role) {
             throw new Error("Role not found");

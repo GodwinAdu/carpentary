@@ -281,7 +281,7 @@ const RolesDisplayPage = ({ roles, userRole }: { roles: IRole[], userRole: IRole
                                                 <TableHeader>
                                                     <TableRow>
                                                         <TableHead>Role</TableHead>
-                                                        <TableHead className="text-right">Users</TableHead>
+                                                        {/* <TableHead className="text-right">Users</TableHead> */}
                                                         <TableHead className="text-right">Actions</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
@@ -301,9 +301,9 @@ const RolesDisplayPage = ({ roles, userRole }: { roles: IRole[], userRole: IRole
                                                                         <div className="text-sm text-muted-foreground">{role.description}</div>
                                                                     </div>
                                                                 </TableCell>
-                                                                <TableCell className="text-right">
+                                                                {/* <TableCell className="text-right">
                                                                     <Badge variant="outline">{role?.userCount?.length || 0}</Badge>
-                                                                </TableCell>
+                                                                </TableCell> */}
                                                                 <TableCell className="text-right">
                                                                     <DropdownMenu>
                                                                         <DropdownMenuTrigger asChild>

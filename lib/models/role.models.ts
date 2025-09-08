@@ -46,14 +46,19 @@ export interface IRole {
 const RoleSchema: Schema<IRole> = new Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        unique:true
     },
     displayName: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        unique: true,
     },
     description: {
-        type: String
+        type: String,
+        trim: true
     },
     permissions: {
         manageAccess: {

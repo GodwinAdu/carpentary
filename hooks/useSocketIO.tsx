@@ -225,9 +225,27 @@ export function useSocketIO(options: UseSocketIOOptions = {}) {
 
     // User events
     socket.on("users-list", (usersList: User[]) => {
+      if (!Array.isArray(usersList)) {
+        console.error("❌ Invalid users list received:", usersList)
+        return
+      }
+      
       console.log("📋 Received users list:", usersList)
-      setUsers(usersList)
-      setUserCount(usersList.length)
+      
+      // Deduplicate users by ID
+      const uniqueUsers = usersList.filter((user, index, arr) => 
+        arr.findIndex(u => u.id === user.id) === index
+      )
+      
+      setUsers(uniqueUsers)
+      setUserCount(uniqueUsers.length)
+      
+      // Clean up typing users who are no longer in the users list
+      setTypingUsers(prev => 
+        prev.filter(typingUser => 
+          uniqueUsers.some(user => user.id === typingUser.userId)
+        )
+      )
     })
 
     socket.on("user-joined", (newUser: User) => {

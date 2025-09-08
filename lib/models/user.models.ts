@@ -56,6 +56,7 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
+        trim: true,
         required: true,
     },
     avatarUrl: {

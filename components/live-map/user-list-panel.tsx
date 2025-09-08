@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Users, MapPin, Clock } from "lucide-react"
-import type { User } from "@/types"
+import type { User } from "@/lib/types"
 
 interface UserListPanelProps {
   users: User[]
@@ -18,13 +18,13 @@ interface UserListPanelProps {
 
 const roleColors = {
   admin: "bg-red-500",
-  supervisor: "bg-yellow-500",
+  moderator: "bg-yellow-500",
   worker: "bg-green-500",
 }
 
 const roleIcons = {
   admin: "👑",
-  supervisor: "👷‍♂️",
+  moderator: "👷‍♂️",
   worker: "🔨",
 }
 
@@ -62,8 +62,8 @@ export function UserListPanel({
             >
               <div className="flex items-center gap-3">
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className={`text-white ${roleColors[user.role]}`}>
-                    {roleIcons[user.role]}
+                  <AvatarFallback className={`text-white ${roleColors[user.role as keyof typeof roleColors]}`}>
+                    {roleIcons[user.role as keyof typeof roleIcons]}
                   </AvatarFallback>
                 </Avatar>
 

@@ -13,7 +13,9 @@ export async function currentUserRole() {
         }
 
         const role = user?.role as string;
-        const userRole: IRole = await fetchRole(role);
+        const userRole = await fetchRole(role);
+
+        console.log("User Role in get-user-role", userRole);
 
         if (!userRole) {
             console.log("cant find User role");
